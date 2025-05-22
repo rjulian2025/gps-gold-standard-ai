@@ -1,4 +1,4 @@
-// All-in-one API file with no external imports
+// All-in-one AI API with fixed persona parsing
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -41,21 +41,23 @@ THERAPIST INFORMATION:
 - Name: ${therapistName}
 - Focus: ${focus}
 - Preferred Client Type: ${preferredClientType}
-- Fulfilling traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
-- Draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
+- Fulfilling traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits || 'Not specified'}
+- Draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
 
 REQUIREMENTS:
-1. Create a 100-150 word persona describing the ideal client
+1. Create a 100-150 word persona describing the ideal client's inner experience
 2. Create 3 marketing hooks with headlines and sublines
 3. Write in an emotionally specific, authentic voice
 4. Avoid therapy clichés and clinical jargon
+5. Focus on how the client FEELS and shows up in the world
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (follow this EXACTLY):
 **PERSONA TITLE:** [Creative, specific title]
 
-**PERSONA:** [100-150 word narrative about the client's inner experience]
+**PERSONA:** [100-150 word narrative about the client's inner experience, struggles, and readiness for change]
 
 **MARKETING HOOKS:**
+
 **Hook 1:** [Emotionally resonant headline]
 ([SEO subline with relevant terms])
 
@@ -65,12 +67,14 @@ OUTPUT FORMAT:
 **Hook 3:** [Emotionally resonant headline]
 ([SEO subline with relevant terms])
 
-Generate the persona now following this exact format.`;
+Generate the complete persona now following this exact format.`;
 }
 
 function parsePersonaOutput(rawOutput) {
   try {
-    const lines = rawOutput.split('\n').filter(line => line.trim());
+    console.log('Raw AI output:', rawOutput);
+    
+    const lines = rawOutput.split('\n').map(line => line.trim()).filter(line => line);
     
     const result = {
       title: '',
@@ -85,28 +89,49 @@ function parsePersonaOutput(rawOutput) {
     for (const line of lines) {
       if (line.includes('**PERSONA TITLE:**')) {
         result.title = line.replace('**PERSONA TITLE:**', '').trim();
+        currentSection = 'title';
       } else if (line.includes('**PERSONA:**')) {
         currentSection = 'persona';
+        // Capture any text after **PERSONA:** on the same line
+        const afterPersona = line.replace('**PERSONA:**', '').trim();
+        if (afterPersona) {
+          personaLines.push(afterPersona);
+        }
       } else if (line.includes('**MARKETING HOOKS:**')) {
         currentSection = 'hooks';
       } else if (line.includes('**Hook') && currentSection === 'hooks') {
-        if (currentHook) result.hooks.push(currentHook);
+        // Save previous hook if exists
+        if (currentHook) {
+          result.hooks.push(currentHook);
+        }
+        // Start new hook
+        const hookText = line.replace(/\*\*Hook \d+:\*\*/, '').trim();
         currentHook = {
-          headline: line.replace(/\*\*Hook \d+:\*\*/, '').trim(),
+          headline: hookText,
           subline: ''
         };
       } else if (line.startsWith('(') && line.endsWith(')') && currentHook) {
-        currentHook.subline = line.slice(1, -1);
-      } else if (currentSection === 'persona' && line.trim()) {
+        // This is a subline for the current hook
+        currentHook.subline = line.slice(1, -1); // Remove parentheses
+      } else if (currentSection === 'persona' && line && !line.includes('**')) {
+        // Add to persona if we're in persona section and it's not a header
         personaLines.push(line);
       }
     }
     
-    if (currentHook) result.hooks.push(currentHook);
-    result.persona = personaLines.join(' ');
+    // Add the last hook if exists
+    if (currentHook) {
+      result.hooks.push(currentHook);
+    }
+    
+    // Join persona lines
+    result.persona = personaLines.join(' ').trim();
+    
+    console.log('Parsed result:', result);
     
     return result;
   } catch (error) {
+    console.error('Parsing error:', error);
     throw new Error(`Failed to parse persona: ${error.message}`);
   }
 }
@@ -136,9 +161,10 @@ export default async function handler(req, res) {
     });
 
     const rawPersona = await callAnthropicAPI(prompt);
-    console.log('✅ Persona generated');
+    console.log('✅ Raw persona generated');
 
     const structuredPersona = parsePersonaOutput(rawPersona);
+    console.log('✅ Persona parsed and structured');
 
     return res.status(200).json({
       success: true,
