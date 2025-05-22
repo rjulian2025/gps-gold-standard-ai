@@ -282,11 +282,14 @@ async function generateWithRetry(therapistData, maxRetries = 3) {
     // Apply grammar filter FIRST - before parsing
     const grammarIssues = grammarFilter(rawContent);
     
+    console.log('🔍 Grammar filter results:', grammarIssues.length > 0 ? grammarIssues : 'PASSED');
+    
     if (grammarIssues.length > 0) {
       console.log(`❌ Attempt ${attempt} failed grammar filter:`, grammarIssues);
       if (attempt === maxRetries) {
         console.log('⚠️ Using content despite grammar issues (max retries reached)');
       } else {
+        console.log('🔄 Retrying due to grammar errors...');
         continue; // Try again
       }
     }
@@ -296,11 +299,13 @@ async function generateWithRetry(therapistData, maxRetries = 3) {
     // Additional validation on parsed content
     const additionalIssues = validateNaturalWriting(parsed.persona);
     
-    if (grammarIssues.length === 0 && additionalIssues.length === 0) {
+    const totalIssues = [...grammarIssues, ...sectionErrors, ...additionalIssues];
+    
+    if (totalIssues.length === 0) {
       console.log('✅ Generated clean content on attempt', attempt);
       return parsed;
     } else {
-      console.log('⚠️ Issues found:', [...grammarIssues, ...additionalIssues]);
+      console.log('⚠️ Total issues found:', totalIssues);
       if (attempt === maxRetries) {
         console.log('🔧 Using best available content');
         return parsed;
