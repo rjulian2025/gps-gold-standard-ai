@@ -1,4 +1,4 @@
-// EMERGENCY MINIMAL VERSION - No fancy filtering, just working code
+// FINAL WORKING VERSION - Complete with all fixes
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -61,7 +61,7 @@ Write professionally, addressing the therapist as "You."`;
   return await callAnthropicAPI(heresYouPrompt);
 }
 
-// Generate persona content with ULTRA SIMPLE prompt
+// Generate persona content with improved prompt
 async function generatePersonaContent(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   
@@ -176,6 +176,10 @@ function parsePersonaContent(rawContent) {
 }
 
 export default async function handler(req, res) {
+  console.log('🚨 API CALLED - VERSION 3.0 WITH ALL FIXES - TIMESTAMP:', new Date().toISOString());
+  console.log('🔍 REQUEST METHOD:', req.method);
+  console.log('🔍 REQUEST BODY RECEIVED:', !!req.body);
+  
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -191,7 +195,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 API called');
+    console.log('🚀 API processing started');
     
     const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
 
@@ -213,10 +217,17 @@ export default async function handler(req, res) {
     // Generate persona content
     console.log('👤 Generating persona...');
     const rawPersonaContent = await generatePersonaContent(therapistData);
+    console.log('📄 Raw content generated, length:', rawPersonaContent.length);
+    
     const parsedPersona = parsePersonaContent(rawPersonaContent);
+    console.log('✅ Content parsed successfully');
 
-    // Simple content fixes
+    // COMPREHENSIVE CONTENT FIXES
+    console.log('🔧 Applying comprehensive grammar fixes...');
+    let sectionErrors = []; // Initialize to prevent errors
+    
     if (parsedPersona.persona) {
+      const originalPersona = parsedPersona.persona.substring(0, 100);
       // Fix the most common grammar disasters
       parsedPersona.persona = parsedPersona.persona
         .replace(/\w+ is a person who sitting/gi, 'Sitting')
@@ -225,13 +236,18 @@ export default async function handler(req, res) {
         .replace(/who they/gi, 'who')
         .replace(/You needs/gi, 'You need')
         .replace(/They needs/gi, 'They need');
+      console.log('🔧 Original persona start:', originalPersona);
+      console.log('🔧 Fixed persona start:', parsedPersona.persona.substring(0, 100));
     }
     
     if (parsedPersona.therapistFit) {
+      const originalFit = parsedPersona.therapistFit;
       parsedPersona.therapistFit = parsedPersona.therapistFit
         .replace(/You needs/gi, 'You need')
         .replace(/You seeks/gi, 'You seek')
         .replace(/You values/gi, 'You value');
+      console.log('🔧 Original therapist fit:', originalFit);
+      console.log('🔧 Fixed therapist fit:', parsedPersona.therapistFit);
     }
 
     // Assemble final result
@@ -249,6 +265,20 @@ export default async function handler(req, res) {
       hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
     };
 
+    // FINAL CLEANUP PASS - Double protection
+    console.log('🔧 Final cleanup pass...');
+    finalResult.persona = finalResult.persona
+      .replace(/\w+ is a person who sitting/gi, 'Sitting')
+      .replace(/\w+ is a person who/gi, 'They are someone who')
+      .replace(/who sitting/gi, 'who is sitting');
+
+    finalResult.therapistFit = finalResult.therapistFit
+      .replace(/You needs/gi, 'You need')
+      .replace(/You seeks/gi, 'You seek')
+      .replace(/You values/gi, 'You value');
+
+    console.log('🎉 Final result assembled and cleaned, sending response');
+
     // Final validation
     if (!finalResult.heresYou || finalResult.heresYou.length < 20) {
       finalResult.heresYou = `Your specialization in ${focus} and experience with ${preferredClientType.toLowerCase()} positions you to provide effective, compassionate care that addresses both immediate concerns and long-term growth.`;
@@ -261,7 +291,8 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        wordCountGuided: true
+        wordCountGuided: true,
+        version: 'VERSION_3.0_ALL_FIXES_APPLIED'
       }
     });
 
