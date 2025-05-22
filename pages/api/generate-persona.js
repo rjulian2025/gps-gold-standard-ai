@@ -1,4 +1,4 @@
-// All-in-one AI API with CORS headers
+// All-in-one AI API with CORS headers and Here's You section
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -35,7 +35,7 @@ async function callAnthropicAPI(prompt) {
 function createPersonaPrompt(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
 
-  return `You are an expert at creating ideal client personas for therapists. Generate exactly 1 persona and 3 marketing hooks.
+  return `You are an expert at creating ideal client personas for therapists. Generate exactly 1 persona with therapist approach and 3 marketing hooks.
 
 THERAPIST INFORMATION:
 - Name: ${therapistName}
@@ -45,14 +45,16 @@ THERAPIST INFORMATION:
 - Draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
 
 REQUIREMENTS:
-1. Create a 100-150 word persona describing the ideal client's inner experience
-2. Create 3 marketing hooks with headlines and sublines
-3. Write in an emotionally specific, authentic voice
-4. Avoid therapy clichés and clinical jargon
-5. Focus on how the client FEELS and shows up in the world
+1. Create a "Here's You" section describing the therapist's approach and strengths (50-75 words)
+2. Create a 100-150 word persona describing the ideal client's inner experience
+3. Create 3 marketing hooks with headlines and sublines
+4. Write in an emotionally specific, authentic voice
+5. Avoid therapy clichés and clinical jargon
 
 OUTPUT FORMAT (follow this EXACTLY):
 **PERSONA TITLE:** [Creative, specific title]
+
+**HERE'S YOU:** [50-75 word description of the therapist's approach, strengths, and what makes them uniquely suited for this client]
 
 **PERSONA:** [100-150 word narrative about the client's inner experience, struggles, and readiness for change]
 
@@ -78,11 +80,13 @@ function parsePersonaOutput(rawOutput) {
     
     const result = {
       title: '',
+      heresYou: '',
       persona: '',
       hooks: []
     };
     
     let currentSection = '';
+    let heresYouLines = [];
     let personaLines = [];
     let currentHook = null;
     
@@ -90,6 +94,13 @@ function parsePersonaOutput(rawOutput) {
       if (line.includes('**PERSONA TITLE:**')) {
         result.title = line.replace('**PERSONA TITLE:**', '').trim();
         currentSection = 'title';
+      } else if (line.includes('**HERE\'S YOU:**')) {
+        currentSection = 'heresYou';
+        // Capture any text after **HERE'S YOU:** on the same line
+        const afterHeresYou = line.replace('**HERE\'S YOU:**', '').trim();
+        if (afterHeresYou) {
+          heresYouLines.push(afterHeresYou);
+        }
       } else if (line.includes('**PERSONA:**')) {
         currentSection = 'persona';
         // Capture any text after **PERSONA:** on the same line
@@ -113,6 +124,9 @@ function parsePersonaOutput(rawOutput) {
       } else if (line.startsWith('(') && line.endsWith(')') && currentHook) {
         // This is a subline for the current hook
         currentHook.subline = line.slice(1, -1); // Remove parentheses
+      } else if (currentSection === 'heresYou' && line && !line.includes('**')) {
+        // Add to heresYou if we're in heresYou section and it's not a header
+        heresYouLines.push(line);
       } else if (currentSection === 'persona' && line && !line.includes('**')) {
         // Add to persona if we're in persona section and it's not a header
         personaLines.push(line);
@@ -124,7 +138,8 @@ function parsePersonaOutput(rawOutput) {
       result.hooks.push(currentHook);
     }
     
-    // Join persona lines
+    // Join lines
+    result.heresYou = heresYouLines.join(' ').trim();
     result.persona = personaLines.join(' ').trim();
     
     console.log('Parsed result:', result);
