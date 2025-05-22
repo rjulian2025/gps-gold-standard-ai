@@ -1,4 +1,4 @@
-import { createPersonaPrompt, createValidationPrompt } from '../../lib/prompts';
+import { createPersonaPrompt, createValidationPrompt } from '../../lib/prompts.js';
 import { callAnthropicAPI } from '../../lib/anthropic';
 import { validatePersonaQuality } from '../../lib/validation';
 
