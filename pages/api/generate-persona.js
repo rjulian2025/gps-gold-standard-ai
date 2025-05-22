@@ -81,17 +81,19 @@ CRITICAL WRITING REQUIREMENTS - FOLLOW EXACTLY:
    ✓ "They carry the weight of..."
    ✗ NEVER "[Title] is a person who..."
    ✗ NEVER "The [Name] is someone who..."
+   ✗ NEVER "[Any title] is a person who..."
 
-2. NO PERSONA NAMES IN DESCRIPTION:
-   - Create title separately 
-   - Never reference title within persona text
-   - Use only "they/them/their" pronouns
+2. ABSOLUTE RULE - NO PERSONA TITLES IN PERSONA TEXT:
+   - Create title completely separately 
+   - NEVER mention the title inside the persona description
+   - Start persona with immediate human observation
+   - Use only "they/them/their" pronouns throughout
 
-3. NATURAL HUMAN LANGUAGE:
-   - Write like observing real people
-   - Use concrete, specific details
-   - Avoid marketing language
-   - Sound like professional case notes
+3. GRAMMAR AND FLOW:
+   - Complete, grammatically correct sentences
+   - Smooth transitions between ideas
+   - No sentence fragments or run-ons
+   - Professional but warm tone
 
 4. WORD COUNT DISCIPLINE:
    - Persona: 150-180 words across 2-3 paragraphs
@@ -102,7 +104,7 @@ STRUCTURE REQUIREMENTS:
 
 **PERSONA TITLE:** [Compelling title - no "The" prefix required]
 
-**PERSONA:** [150-180 words, 2-3 paragraphs, natural opening, specific human details]
+**PERSONA:** [150-180 words, 2-3 paragraphs, natural opening with immediate human observation, NO title references]
 
 **WHAT THEY NEED:** [45-55 words focusing on therapeutic requirements]
 
@@ -123,41 +125,67 @@ CONTENT GUIDANCE:
 - Energizing client traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 - Challenging client traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
-EXAMPLES OF NATURAL OPENINGS:
-- "Their hands fold carefully in their lap, but their eyes dart toward the door."
-- "Behind the polite smile lies months of sleepless nights."
-- "Sitting across from you, shoulders tense with unspoken worry."
+EXAMPLES OF CORRECT OPENINGS:
+✓ "Sitting across from you, their hands fold carefully in their lap."
+✓ "Behind the polite smile lies months of sleepless nights."
+✓ "They enter your office with shoulders tense from unspoken worry."
 
-Remember: You're describing a REAL PERSON, not a marketing construct. Write with observational precision and human empathy.
+EXAMPLES OF FORBIDDEN OPENINGS:
+✗ "Exhausted Guardian is a person who..."
+✗ "The Struggling Parent is someone who..."
+✗ "[Any title] is a person who..."
 
-STOP after marketing hooks. DO NOT generate anything else.`;
+Remember: Start with IMMEDIATE human observation. Never reference the persona title.
+
+CRITICAL: Do NOT generate any "How to Use" section. Stop immediately after the three marketing hooks.`;
 
   return await callAnthropicAPI(personaPrompt);
+}
+
+// Simple but effective grammar and pattern filter
+function grammarFilter(content) {
+  const errors = [];
+  
+  // GRAMMAR KILLERS - These break readability immediately
+  const grammarErrors = [
+    { pattern: /who sitting/i, error: 'Fragment: "who sitting" (should be "who is sitting")' },
+    { pattern: /who they/i, error: 'Fragment: "who they" (needs verb)' },
+    { pattern: /who when/i, error: 'Fragment: "who when" (incomplete clause)' },
+    { pattern: /is a person who sitting/i, error: 'Double error: template + fragment' },
+    { pattern: /You needs/i, error: 'Subject-verb disagreement: "You needs" (should be "You need")' },
+    { pattern: /They needs/i, error: 'Subject-verb disagreement: "They needs" (should be "They need")' }
+  ];
+  
+  // TEMPLATE KILLERS - These sound robotic
+  const templateErrors = [
+    { pattern: /\w+ is a person who/i, error: 'Template language: "[Title] is a person who"' },
+    { pattern: /is someone who/i, error: 'Template language: "is someone who"' },
+    { pattern: /meet the \w+/i, error: 'Template language: "meet the [title]"' }
+  ];
+  
+  // FORBIDDEN SECTIONS
+  const structureErrors = [
+    { pattern: /how to use these/i, error: 'Forbidden section: "How to Use"' },
+    { pattern: /use these resonance hooks/i, error: 'Forbidden instructional content' }
+  ];
+  
+  // Check all error types
+  [...grammarErrors, ...templateErrors, ...structureErrors].forEach(check => {
+    if (check.pattern.test(content)) {
+      errors.push(check.error);
+    }
+  });
+  
+  return errors;
 }
 
 // Enhanced validation function
 function validateNaturalWriting(persona) {
   const issues = [];
   
-  // Check for unnatural openings
-  const unnaturalPatterns = [
-    /is a person who/i,
-    /is someone who/i,
-    /the \w+ is/i,
-    /meet the/i,
-    /this is/i
-  ];
-  
-  unnaturalPatterns.forEach(pattern => {
-    if (pattern.test(persona)) {
-      issues.push('Contains unnatural opening pattern');
-    }
-  });
-  
-  // Check for persona name in description
-  if (persona.includes('Navigator') || persona.includes('Reactor') || persona.includes('Seeker')) {
-    issues.push('Contains persona name in description');
-  }
+  // Run grammar filter first
+  const grammarIssues = grammarFilter(persona);
+  issues.push(...grammarIssues);
   
   // Check word count
   const wordCount = persona.split(/\s+/).length;
@@ -177,6 +205,12 @@ function parsePersonaContent(rawContent) {
     hooks: []
   };
 
+  // Apply grammar filter to entire content first
+  const grammarIssues = grammarFilter(rawContent);
+  if (grammarIssues.length > 0) {
+    console.log('⚠️ Grammar issues detected:', grammarIssues);
+  }
+
   // Extract title
   const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
   if (titleMatch) {
@@ -195,25 +229,38 @@ function parsePersonaContent(rawContent) {
     result.whatTheyNeed = whatTheyNeedMatch[1].trim();
   }
 
-  // Extract Therapist Fit
+  // Extract Therapist Fit  
   const therapistFitMatch = rawContent.match(/\*\*THERAPIST FIT:\*\*(.*?)(?=\*\*MARKETING|$)/s);
   if (therapistFitMatch) {
     result.therapistFit = therapistFitMatch[1].trim();
   }
 
-  // Extract hooks - improved parsing
+  // Extract hooks - aggressive filtering of unwanted content
   const hookPattern = /\*\*([^*\n]+)\*\*\s*\n([^*\n]+)/g;
   const marketingStart = rawContent.indexOf('**MARKETING HOOKS:**');
   
   if (marketingStart > -1) {
-    const marketingSection = rawContent.substring(marketingStart);
+    let marketingSection = rawContent.substring(marketingStart);
+    
+    // Stop at any of these unwanted sections
+    const stopWords = ['**How to Use', '**Use these', '**Created with', '**Download', '**Powered by'];
+    for (let stopWord of stopWords) {
+      const stopIndex = marketingSection.indexOf(stopWord);
+      if (stopIndex > -1) {
+        marketingSection = marketingSection.substring(0, stopIndex);
+        break;
+      }
+    }
+    
     const hookMatches = [...marketingSection.matchAll(hookPattern)];
     
     for (const match of hookMatches) {
       const headline = match[1].trim();
       const subline = match[2].trim();
       
-      if (!headline.includes('MARKETING HOOKS') && headline.length > 5) {
+      if (!headline.includes('MARKETING HOOKS') && 
+          !headline.includes('How to Use') && 
+          headline.length > 5) {
         result.hooks.push({
           headline: headline,
           subline: subline
@@ -225,24 +272,37 @@ function parsePersonaContent(rawContent) {
   return result;
 }
 
-// Retry function for better quality
-async function generateWithRetry(therapistData, maxRetries = 2) {
+// Retry function with grammar filtering
+async function generateWithRetry(therapistData, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     console.log(`🎯 Generation attempt ${attempt}/${maxRetries}`);
     
     const rawContent = await generatePersonaContent(therapistData);
+    
+    // Apply grammar filter FIRST - before parsing
+    const grammarIssues = grammarFilter(rawContent);
+    
+    if (grammarIssues.length > 0) {
+      console.log(`❌ Attempt ${attempt} failed grammar filter:`, grammarIssues);
+      if (attempt === maxRetries) {
+        console.log('⚠️ Using content despite grammar issues (max retries reached)');
+      } else {
+        continue; // Try again
+      }
+    }
+    
     const parsed = parsePersonaContent(rawContent);
     
-    // Validate natural writing
-    const issues = validateNaturalWriting(parsed.persona);
+    // Additional validation on parsed content
+    const additionalIssues = validateNaturalWriting(parsed.persona);
     
-    if (issues.length === 0) {
-      console.log('✅ Generated natural content on attempt', attempt);
+    if (grammarIssues.length === 0 && additionalIssues.length === 0) {
+      console.log('✅ Generated clean content on attempt', attempt);
       return parsed;
     } else {
-      console.log('⚠️ Issues found:', issues);
+      console.log('⚠️ Issues found:', [...grammarIssues, ...additionalIssues]);
       if (attempt === maxRetries) {
-        console.log('🔧 Using content with minor issues');
+        console.log('🔧 Using best available content');
         return parsed;
       }
     }
