@@ -1,7 +1,4 @@
-import { createPersonaPrompt, createValidationPrompt } from '../../lib/prompts.js';
-import { callAnthropicAPI } from '../../lib/anthropic.js';
-import { validatePersonaQuality } from '../../lib/validation.js';
-
+// Simplified test version to isolate the issue
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -9,107 +6,39 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { 
-      therapistName, 
-      focus, 
-      yearsOfPractice, 
-      preferredClientType, 
-      fulfillingTraits, 
-      drainingTraits, 
-      transformations, 
-      dinnerTopics, 
-      email 
-    } = req.body;
-
-    // Validate required fields
-    if (!therapistName || !focus || !preferredClientType) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: therapistName, focus, preferredClientType' 
+    // Test API key
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ 
+        error: 'ANTHROPIC_API_KEY not configured' 
       });
     }
 
-    console.log('🎯 Generating persona for:', therapistName);
+    const { therapistName } = req.body;
 
-    // Step 1: Generate initial persona
-    const personaPrompt = createPersonaPrompt({
-      therapistName,
-      focus,
-      yearsOfPractice,
-      preferredClientType,
-      fulfillingTraits,
-      drainingTraits,
-      transformations,
-      dinnerTopics
-    });
-
-    const initialPersona = await callAnthropicAPI(personaPrompt);
-    console.log('✅ Initial persona generated');
-
-    // Step 2: Validate quality (aim for 95-98% adherence)
-    const validationPrompt = createValidationPrompt(initialPersona);
-    const qualityScore = await callAnthropicAPI(validationPrompt);
-    
-    console.log('🔍 Quality validation complete');
-
-    // Step 3: Parse quality score and retry if needed
-    const scoreMatch = qualityScore.match(/CONFIDENCE_SCORE:\s*(\d+)/);
-    const confidence = scoreMatch ? parseInt(scoreMatch[1]) : 0;
-
-    console.log(`📊 Quality confidence: ${confidence}%`);
-
-    let finalPersona = initialPersona;
-    let retryCount = 0;
-    const maxRetries = 2;
-
-    // Retry if quality is below 95%
-    while (confidence < 95 && retryCount < maxRetries) {
-      console.log(`🔄 Retrying generation (attempt ${retryCount + 1})`);
-      
-      const retryPrompt = createPersonaPrompt({
-        therapistName,
-        focus,
-        yearsOfPractice,
-        preferredClientType,
-        fulfillingTraits,
-        drainingTraits,
-        transformations,
-        dinnerTopics
-      }, true); // Enhanced prompt for retry
-
-      finalPersona = await callAnthropicAPI(retryPrompt);
-      retryCount++;
+    if (!therapistName) {
+      return res.status(400).json({ 
+        error: 'Missing therapistName' 
+      });
     }
 
-    // Step 4: Parse and structure the final output
-    const structuredPersona = validatePersonaQuality(finalPersona);
-
-    // Step 5: Log success metrics
-    console.log('🎉 Persona generation complete:', {
-      therapist: therapistName,
-      confidence: confidence,
-      retries: retryCount,
-      timestamp: new Date().toISOString()
-    });
-
-    // Return structured response
+    // Simple test response
     return res.status(200).json({
       success: true,
-      persona: structuredPersona,
-      metadata: {
-        qualityScore: confidence,
-        retryCount: retryCount,
-        generatedAt: new Date().toISOString(),
-        therapistEmail: email
-      }
+      message: 'API is working!',
+      therapistName: therapistName,
+      timestamp: new Date().toISOString(),
+      hasApiKey: !!apiKey
     });
 
   } catch (error) {
-    console.error('❌ Persona generation error:', error);
+    console.error('Error:', error);
     
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate persona',
-      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      error: 'Server error',
+      details: error.message
     });
   }
 }
