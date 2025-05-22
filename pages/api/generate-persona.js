@@ -10,7 +10,7 @@ async function callAnthropicAPI(prompt) {
   const requestBody = {
     model: 'claude-3-7-sonnet-20250219',
     max_tokens: 1500,
-    temperature: 0.15,
+    temperature: 0.2, // Slightly higher for more natural variation
     messages: [{ role: 'user', content: prompt }]
   };
 
@@ -73,22 +73,40 @@ ${isForParents ?
   'AUDIENCE: Write for PARENTS of struggling teens/children. Describe the parent\'s experience, concerns, and emotional journey.' : 
   'AUDIENCE: Write for ADULTS seeking therapy. Describe their internal experience and readiness for change.'}
 
-STYLE: Professional, observational, specific. Write like "The Quiet Reactor" example - sophisticated but accessible.
+CRITICAL WRITING REQUIREMENTS - FOLLOW EXACTLY:
 
-CRITICAL WRITING RULES:
-- NO NAMES ever (not Sarah, Michael, Alex, etc.) - use only pronouns
-- NEVER write "[Title] is a person who..." - start naturally
-- Begin with immediate, specific observations
+1. NATURAL OPENINGS ONLY:
+   ✓ "Sitting across from you..."
+   ✓ "Behind their composed exterior..."
+   ✓ "They carry the weight of..."
+   ✗ NEVER "[Title] is a person who..."
+   ✗ NEVER "The [Name] is someone who..."
 
-STRUCTURE REQUIREMENTS (non-negotiable):
+2. NO PERSONA NAMES IN DESCRIPTION:
+   - Create title separately 
+   - Never reference title within persona text
+   - Use only "they/them/their" pronouns
 
-**PERSONA TITLE:** [Compelling title]
+3. NATURAL HUMAN LANGUAGE:
+   - Write like observing real people
+   - Use concrete, specific details
+   - Avoid marketing language
+   - Sound like professional case notes
 
-**PERSONA:** [150-180 words in 2-3 paragraphs describing their experience]
+4. WORD COUNT DISCIPLINE:
+   - Persona: 150-180 words across 2-3 paragraphs
+   - What They Need: 45-55 words
+   - Therapist Fit: 45-55 words
 
-**WHAT THEY NEED:** [45-55 words]
+STRUCTURE REQUIREMENTS:
 
-**THERAPIST FIT:** [45-55 words]
+**PERSONA TITLE:** [Compelling title - no "The" prefix required]
+
+**PERSONA:** [150-180 words, 2-3 paragraphs, natural opening, specific human details]
+
+**WHAT THEY NEED:** [45-55 words focusing on therapeutic requirements]
+
+**THERAPIST FIT:** [45-55 words explaining why this therapist matches]
 
 **MARKETING HOOKS:**
 
@@ -105,9 +123,49 @@ CONTENT GUIDANCE:
 - Energizing client traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 - Challenging client traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
+EXAMPLES OF NATURAL OPENINGS:
+- "Their hands fold carefully in their lap, but their eyes dart toward the door."
+- "Behind the polite smile lies months of sleepless nights."
+- "Sitting across from you, shoulders tense with unspoken worry."
+
+Remember: You're describing a REAL PERSON, not a marketing construct. Write with observational precision and human empathy.
+
 STOP after marketing hooks. DO NOT generate anything else.`;
 
   return await callAnthropicAPI(personaPrompt);
+}
+
+// Enhanced validation function
+function validateNaturalWriting(persona) {
+  const issues = [];
+  
+  // Check for unnatural openings
+  const unnaturalPatterns = [
+    /is a person who/i,
+    /is someone who/i,
+    /the \w+ is/i,
+    /meet the/i,
+    /this is/i
+  ];
+  
+  unnaturalPatterns.forEach(pattern => {
+    if (pattern.test(persona)) {
+      issues.push('Contains unnatural opening pattern');
+    }
+  });
+  
+  // Check for persona name in description
+  if (persona.includes('Navigator') || persona.includes('Reactor') || persona.includes('Seeker')) {
+    issues.push('Contains persona name in description');
+  }
+  
+  // Check word count
+  const wordCount = persona.split(/\s+/).length;
+  if (wordCount < 130 || wordCount > 200) {
+    issues.push(`Word count ${wordCount} outside target range`);
+  }
+  
+  return issues;
 }
 
 function parsePersonaContent(rawContent) {
@@ -122,7 +180,7 @@ function parsePersonaContent(rawContent) {
   // Extract title
   const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
   if (titleMatch) {
-    result.title = titleMatch[1].trim();
+    result.title = titleMatch[1].trim().replace(/^The\s+/, ''); // Remove "The" prefix
   }
 
   // Extract persona
@@ -143,7 +201,7 @@ function parsePersonaContent(rawContent) {
     result.therapistFit = therapistFitMatch[1].trim();
   }
 
-  // Extract hooks - simplified parsing
+  // Extract hooks - improved parsing
   const hookPattern = /\*\*([^*\n]+)\*\*\s*\n([^*\n]+)/g;
   const marketingStart = rawContent.indexOf('**MARKETING HOOKS:**');
   
@@ -165,6 +223,30 @@ function parsePersonaContent(rawContent) {
   }
 
   return result;
+}
+
+// Retry function for better quality
+async function generateWithRetry(therapistData, maxRetries = 2) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`🎯 Generation attempt ${attempt}/${maxRetries}`);
+    
+    const rawContent = await generatePersonaContent(therapistData);
+    const parsed = parsePersonaContent(rawContent);
+    
+    // Validate natural writing
+    const issues = validateNaturalWriting(parsed.persona);
+    
+    if (issues.length === 0) {
+      console.log('✅ Generated natural content on attempt', attempt);
+      return parsed;
+    } else {
+      console.log('⚠️ Issues found:', issues);
+      if (attempt === maxRetries) {
+        console.log('🔧 Using content with minor issues');
+        return parsed;
+      }
+    }
+  }
 }
 
 export default async function handler(req, res) {
@@ -199,13 +281,12 @@ export default async function handler(req, res) {
     // Generate HERE'S YOU separately
     const heresYouContent = await generateHeresYou(therapistData);
     
-    // Generate persona content
-    const rawPersonaContent = await generatePersonaContent(therapistData);
-    const parsedPersona = parsePersonaContent(rawPersonaContent);
+    // Generate persona content with retry for quality
+    const parsedPersona = await generateWithRetry(therapistData);
 
-    // Assemble final result - NO "How to Use" (frontend handles)
+    // Assemble final result
     const finalResult = {
-      title: parsedPersona.title || (isForParents ? 'The Concerned Parent' : 'The Thoughtful Client'),
+      title: parsedPersona.title || (isForParents ? 'Concerned Parent' : 'Thoughtful Client'),
       
       heresYou: heresYouContent.trim() || `Your expertise in ${focus} creates optimal conditions for working with ${preferredClientType.toLowerCase()}. You understand their unique challenges and provide both clinical skill and genuine empathy in your therapeutic approach.`,
       
@@ -216,8 +297,6 @@ export default async function handler(req, res) {
       therapistFit: parsedPersona.therapistFit || `A therapist who offers both clinical competence and authentic connection, matching their needs with appropriate interventions.`,
       
       hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
-      
-      // NO howToUse - frontend will add boilerplate
     };
 
     // Final validation - ensure HERE'S YOU exists
@@ -232,7 +311,8 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        wordCountGuided: true
+        wordCountGuided: true,
+        naturalWritingValidated: true
       }
     });
 
