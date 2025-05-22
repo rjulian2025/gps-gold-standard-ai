@@ -1,4 +1,4 @@
-// GUIDED CONSTRAINTS: Strict Structure, Flexible Execution
+// EMERGENCY MINIMAL VERSION - No fancy filtering, just working code
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -10,7 +10,7 @@ async function callAnthropicAPI(prompt) {
   const requestBody = {
     model: 'claude-3-7-sonnet-20250219',
     max_tokens: 1500,
-    temperature: 0.2, // Slightly higher for more natural variation
+    temperature: 0.15,
     messages: [{ role: 'user', content: prompt }]
   };
 
@@ -43,7 +43,7 @@ function isMinorSpecialist(preferredClientType, focus) {
   );
 }
 
-// SEPARATE FUNCTION: Generate ONLY the HERE'S YOU content
+// Generate HERE'S YOU content
 async function generateHeresYou(therapistData) {
   const { therapistName, focus, preferredClientType } = therapistData;
   
@@ -61,139 +61,48 @@ Write professionally, addressing the therapist as "You."`;
   return await callAnthropicAPI(heresYouPrompt);
 }
 
-// SEPARATE FUNCTION: Generate the persona content
+// Generate persona content with ULTRA SIMPLE prompt
 async function generatePersonaContent(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  const personaPrompt = `Create a professional client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
+  const personaPrompt = `Create a client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
 
 ${isForParents ? 
-  'AUDIENCE: Write for PARENTS of struggling teens/children. Describe the parent\'s experience, concerns, and emotional journey.' : 
-  'AUDIENCE: Write for ADULTS seeking therapy. Describe their internal experience and readiness for change.'}
+  'AUDIENCE: Write for PARENTS of struggling teens/children.' : 
+  'AUDIENCE: Write for ADULTS seeking therapy.'}
 
-CRITICAL WRITING REQUIREMENTS - FOLLOW EXACTLY:
+CRITICAL RULES:
+- NEVER write "[Title] is a person who..."
+- Start with: "Sitting across from you..." or "Behind their..." or "They carry..."
+- Use only "they/them" pronouns
+- NO "How to Use" section
 
-1. NATURAL OPENINGS ONLY:
-   ✓ "Sitting across from you..."
-   ✓ "Behind their composed exterior..."
-   ✓ "They carry the weight of..."
-   ✗ NEVER "[Title] is a person who..."
-   ✗ NEVER "The [Name] is someone who..."
-   ✗ NEVER "[Any title] is a person who..."
+STRUCTURE:
 
-2. ABSOLUTE RULE - NO PERSONA TITLES IN PERSONA TEXT:
-   - Create title completely separately 
-   - NEVER mention the title inside the persona description
-   - Start persona with immediate human observation
-   - Use only "they/them/their" pronouns throughout
+**PERSONA TITLE:** [Title]
 
-3. GRAMMAR AND FLOW:
-   - Complete, grammatically correct sentences
-   - Smooth transitions between ideas
-   - No sentence fragments or run-ons
-   - Professional but warm tone
+**PERSONA:** [150-180 words, start naturally]
 
-4. WORD COUNT DISCIPLINE:
-   - Persona: 150-180 words across 2-3 paragraphs
-   - What They Need: 45-55 words
-   - Therapist Fit: 45-55 words
+**WHAT THEY NEED:** [45-55 words]
 
-STRUCTURE REQUIREMENTS:
-
-**PERSONA TITLE:** [Compelling title - no "The" prefix required]
-
-**PERSONA:** [150-180 words, 2-3 paragraphs, natural opening with immediate human observation, NO title references]
-
-**WHAT THEY NEED:** [45-55 words focusing on therapeutic requirements]
-
-**THERAPIST FIT:** [45-55 words explaining why this therapist matches]
+**THERAPIST FIT:** [45-55 words]
 
 **MARKETING HOOKS:**
 
-**[Compelling Headline]**
-[Descriptive subline]
+**[Headline 1]**
+[Subline 1]
 
-**[Second Headline]**
-[Second subline]
+**[Headline 2]**
+[Subline 2]
 
-**[Third Headline]**
-[Third subline]
+**[Headline 3]**
+[Subline 3]
 
-CONTENT GUIDANCE:
-- Energizing client traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
-- Challenging client traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
-
-EXAMPLES OF CORRECT OPENINGS:
-✓ "Sitting across from you, their hands fold carefully in their lap."
-✓ "Behind the polite smile lies months of sleepless nights."
-✓ "They enter your office with shoulders tense from unspoken worry."
-
-EXAMPLES OF FORBIDDEN OPENINGS:
-✗ "Exhausted Guardian is a person who..."
-✗ "The Struggling Parent is someone who..."
-✗ "[Any title] is a person who..."
-
-Remember: Start with IMMEDIATE human observation. Never reference the persona title.
-
-CRITICAL: Do NOT generate any "How to Use" section. Stop immediately after the three marketing hooks.`;
+STOP after hooks. NO additional sections.`;
 
   return await callAnthropicAPI(personaPrompt);
-}
-
-// Simple but effective grammar and pattern filter
-function grammarFilter(content) {
-  const errors = [];
-  
-  // GRAMMAR KILLERS - These break readability immediately
-  const grammarErrors = [
-    { pattern: /who sitting/i, error: 'Fragment: "who sitting" (should be "who is sitting")' },
-    { pattern: /who they/i, error: 'Fragment: "who they" (needs verb)' },
-    { pattern: /who when/i, error: 'Fragment: "who when" (incomplete clause)' },
-    { pattern: /is a person who sitting/i, error: 'Double error: template + fragment' },
-    { pattern: /You needs/i, error: 'Subject-verb disagreement: "You needs" (should be "You need")' },
-    { pattern: /They needs/i, error: 'Subject-verb disagreement: "They needs" (should be "They need")' }
-  ];
-  
-  // TEMPLATE KILLERS - These sound robotic
-  const templateErrors = [
-    { pattern: /\w+ is a person who/i, error: 'Template language: "[Title] is a person who"' },
-    { pattern: /is someone who/i, error: 'Template language: "is someone who"' },
-    { pattern: /meet the \w+/i, error: 'Template language: "meet the [title]"' }
-  ];
-  
-  // FORBIDDEN SECTIONS
-  const structureErrors = [
-    { pattern: /how to use these/i, error: 'Forbidden section: "How to Use"' },
-    { pattern: /use these resonance hooks/i, error: 'Forbidden instructional content' }
-  ];
-  
-  // Check all error types
-  [...grammarErrors, ...templateErrors, ...structureErrors].forEach(check => {
-    if (check.pattern.test(content)) {
-      errors.push(check.error);
-    }
-  });
-  
-  return errors;
-}
-
-// Enhanced validation function
-function validateNaturalWriting(persona) {
-  const issues = [];
-  
-  // Run grammar filter first
-  const grammarIssues = grammarFilter(persona);
-  issues.push(...grammarIssues);
-  
-  // Check word count
-  const wordCount = persona.split(/\s+/).length;
-  if (wordCount < 130 || wordCount > 200) {
-    issues.push(`Word count ${wordCount} outside target range`);
-  }
-  
-  return issues;
 }
 
 function parsePersonaContent(rawContent) {
@@ -205,113 +114,63 @@ function parsePersonaContent(rawContent) {
     hooks: []
   };
 
-  // Apply grammar filter to entire content first
-  const grammarIssues = grammarFilter(rawContent);
-  if (grammarIssues.length > 0) {
-    console.log('⚠️ Grammar issues detected:', grammarIssues);
-  }
+  try {
+    // Extract title
+    const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
+    if (titleMatch) {
+      result.title = titleMatch[1].trim().replace(/^The\s+/, '');
+    }
 
-  // Extract title
-  const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
-  if (titleMatch) {
-    result.title = titleMatch[1].trim().replace(/^The\s+/, ''); // Remove "The" prefix
-  }
+    // Extract persona
+    const personaMatch = rawContent.match(/\*\*PERSONA:\*\*(.*?)(?=\*\*WHAT THEY NEED|\*\*THERAPIST FIT|\*\*MARKETING|$)/s);
+    if (personaMatch) {
+      result.persona = personaMatch[1].trim().replace(/\n\s*\n/g, '\n\n');
+    }
 
-  // Extract persona
-  const personaMatch = rawContent.match(/\*\*PERSONA:\*\*(.*?)(?=\*\*WHAT THEY NEED|\*\*THERAPIST FIT|\*\*MARKETING|$)/s);
-  if (personaMatch) {
-    result.persona = personaMatch[1].trim().replace(/\n\s*\n/g, '\n\n');
-  }
+    // Extract What They Need
+    const whatTheyNeedMatch = rawContent.match(/\*\*WHAT THEY NEED:\*\*(.*?)(?=\*\*THERAPIST FIT|\*\*MARKETING|$)/s);
+    if (whatTheyNeedMatch) {
+      result.whatTheyNeed = whatTheyNeedMatch[1].trim();
+    }
 
-  // Extract What They Need
-  const whatTheyNeedMatch = rawContent.match(/\*\*WHAT THEY NEED:\*\*(.*?)(?=\*\*THERAPIST FIT|\*\*MARKETING|$)/s);
-  if (whatTheyNeedMatch) {
-    result.whatTheyNeed = whatTheyNeedMatch[1].trim();
-  }
+    // Extract Therapist Fit
+    const therapistFitMatch = rawContent.match(/\*\*THERAPIST FIT:\*\*(.*?)(?=\*\*MARKETING|$)/s);
+    if (therapistFitMatch) {
+      result.therapistFit = therapistFitMatch[1].trim();
+    }
 
-  // Extract Therapist Fit  
-  const therapistFitMatch = rawContent.match(/\*\*THERAPIST FIT:\*\*(.*?)(?=\*\*MARKETING|$)/s);
-  if (therapistFitMatch) {
-    result.therapistFit = therapistFitMatch[1].trim();
-  }
-
-  // Extract hooks - aggressive filtering of unwanted content
-  const hookPattern = /\*\*([^*\n]+)\*\*\s*\n([^*\n]+)/g;
-  const marketingStart = rawContent.indexOf('**MARKETING HOOKS:**');
-  
-  if (marketingStart > -1) {
-    let marketingSection = rawContent.substring(marketingStart);
+    // Extract hooks - simple parsing
+    const hookPattern = /\*\*([^*\n]+)\*\*\s*\n([^*\n]+)/g;
+    const marketingStart = rawContent.indexOf('**MARKETING HOOKS:**');
     
-    // Stop at any of these unwanted sections
-    const stopWords = ['**How to Use', '**Use these', '**Created with', '**Download', '**Powered by'];
-    for (let stopWord of stopWords) {
-      const stopIndex = marketingSection.indexOf(stopWord);
+    if (marketingStart > -1) {
+      let marketingSection = rawContent.substring(marketingStart);
+      
+      // Stop at unwanted sections
+      const stopIndex = marketingSection.search(/\*\*(How to Use|Use these|Created with|Download|Powered by)/);
       if (stopIndex > -1) {
         marketingSection = marketingSection.substring(0, stopIndex);
-        break;
       }
-    }
-    
-    const hookMatches = [...marketingSection.matchAll(hookPattern)];
-    
-    for (const match of hookMatches) {
-      const headline = match[1].trim();
-      const subline = match[2].trim();
       
-      if (!headline.includes('MARKETING HOOKS') && 
-          !headline.includes('How to Use') && 
-          headline.length > 5) {
-        result.hooks.push({
-          headline: headline,
-          subline: subline
-        });
+      const hookMatches = [...marketingSection.matchAll(hookPattern)];
+      
+      for (const match of hookMatches) {
+        const headline = match[1].trim();
+        const subline = match[2].trim();
+        
+        if (!headline.includes('MARKETING HOOKS') && headline.length > 5) {
+          result.hooks.push({
+            headline: headline,
+            subline: subline
+          });
+        }
       }
     }
+  } catch (error) {
+    console.log('⚠️ Parsing error:', error.message);
   }
 
   return result;
-}
-
-// Retry function with grammar filtering
-async function generateWithRetry(therapistData, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`🎯 Generation attempt ${attempt}/${maxRetries}`);
-    
-    const rawContent = await generatePersonaContent(therapistData);
-    
-    // Apply grammar filter FIRST - before parsing
-    const grammarIssues = grammarFilter(rawContent);
-    
-    console.log('🔍 Grammar filter results:', grammarIssues.length > 0 ? grammarIssues : 'PASSED');
-    
-    if (grammarIssues.length > 0) {
-      console.log(`❌ Attempt ${attempt} failed grammar filter:`, grammarIssues);
-      if (attempt === maxRetries) {
-        console.log('⚠️ Using content despite grammar issues (max retries reached)');
-      } else {
-        console.log('🔄 Retrying due to grammar errors...');
-        continue; // Try again
-      }
-    }
-    
-    const parsed = parsePersonaContent(rawContent);
-    
-    // Additional validation on parsed content
-    const additionalIssues = validateNaturalWriting(parsed.persona);
-    
-    const totalIssues = [...grammarIssues, ...sectionErrors, ...additionalIssues];
-    
-    if (totalIssues.length === 0) {
-      console.log('✅ Generated clean content on attempt', attempt);
-      return parsed;
-    } else {
-      console.log('⚠️ Total issues found:', totalIssues);
-      if (attempt === maxRetries) {
-        console.log('🔧 Using best available content');
-        return parsed;
-      }
-    }
-  }
 }
 
 export default async function handler(req, res) {
@@ -330,6 +189,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('🚀 API called');
+    
     const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
 
     if (!therapistName || !focus || !preferredClientType) {
@@ -343,11 +204,16 @@ export default async function handler(req, res) {
 
     console.log('🎯 Generating for:', therapistName, '| Parent-focused:', isForParents);
 
-    // Generate HERE'S YOU separately
+    // Generate HERE'S YOU
+    console.log('📝 Generating Here\'s You...');
     const heresYouContent = await generateHeresYou(therapistData);
     
-    // Generate persona content with retry for quality
-    const parsedPersona = await generateWithRetry(therapistData);
+    // Generate persona content
+    console.log('👤 Generating persona...');
+    const rawPersonaContent = await generatePersonaContent(therapistData);
+    const parsedPersona = parsePersonaContent(rawPersonaContent);
+
+    console.log('✅ Generation complete');
 
     // Assemble final result
     const finalResult = {
@@ -364,7 +230,7 @@ export default async function handler(req, res) {
       hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
     };
 
-    // Final validation - ensure HERE'S YOU exists
+    // Final validation
     if (!finalResult.heresYou || finalResult.heresYou.length < 20) {
       finalResult.heresYou = `Your specialization in ${focus} and experience with ${preferredClientType.toLowerCase()} positions you to provide effective, compassionate care that addresses both immediate concerns and long-term growth.`;
     }
@@ -376,8 +242,7 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        wordCountGuided: true,
-        naturalWritingValidated: true
+        wordCountGuided: true
       }
     });
 
