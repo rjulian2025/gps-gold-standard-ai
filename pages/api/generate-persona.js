@@ -75,11 +75,16 @@ ${isForParents ?
 
 STYLE: Professional, observational, specific. Write like "The Quiet Reactor" example - sophisticated but accessible.
 
+CRITICAL WRITING RULES:
+- NO NAMES ever (not Sarah, Michael, Alex, etc.) - use only pronouns
+- NEVER write "[Title] is a person who..." - start naturally
+- Begin with immediate, specific observations
+
 STRUCTURE REQUIREMENTS (non-negotiable):
 
 **PERSONA TITLE:** [Compelling title]
 
-**PERSONA:** [150-180 words in 2-3 paragraphs]
+**PERSONA:** [150-180 words in 2-3 paragraphs describing their experience]
 
 **WHAT THEY NEED:** [45-55 words]
 
@@ -100,7 +105,7 @@ CONTENT GUIDANCE:
 - Energizing client traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 - Challenging client traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
-Write clear, grammatically correct content. DO NOT generate "How to Use" section.`;
+STOP after marketing hooks. DO NOT generate anything else.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -198,14 +203,7 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContent(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // LOCKED "How to Use" boilerplate
-    const LOCKED_HOW_TO_USE = `How to Use These Resonance Hooks
-
-Free to use. Forever.
-
-Use them as headlines in social media posts, website headlines, email subjects, intake forms . . . wherever you want your Ideal Client to say, "They get me."`;
-
-    // Assemble final result with constraints
+    // Assemble final result - NO "How to Use" (frontend handles)
     const finalResult = {
       title: parsedPersona.title || (isForParents ? 'The Concerned Parent' : 'The Thoughtful Client'),
       
@@ -217,9 +215,9 @@ Use them as headlines in social media posts, website headlines, email subjects, 
       
       therapistFit: parsedPersona.therapistFit || `A therapist who offers both clinical competence and authentic connection, matching their needs with appropriate interventions.`,
       
-      hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks,
+      hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
       
-      howToUse: LOCKED_HOW_TO_USE
+      // NO howToUse - frontend will add boilerplate
     };
 
     // Final validation - ensure HERE'S YOU exists
