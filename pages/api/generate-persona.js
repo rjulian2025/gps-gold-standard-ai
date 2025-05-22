@@ -91,19 +91,22 @@ WRITING REQUIREMENTS:
 - Gold standard like "The Quiet Reactor" - observational, clinical precision
 - NO NAMES - use appropriate pronouns
 - Vary sentence structures - don't start consecutive sentences with same pronoun
-- 150-170 words describing the ${isForParents ? 'parent\'s' : 'client\'s'} experience and therapeutic readiness
+- BREAK INTO 2-3 PARAGRAPHS for readability - use paragraph breaks in the persona description
+- 150-170 words total describing the ${isForParents ? 'parent\'s' : 'client\'s'} experience and therapeutic readiness
 
 Client energizing traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 Client draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
 OUTPUT FORMAT:
 **PERSONA TITLE:** [Title - ${isForParents ? 'focus on parent experience' : 'focus on client type'}]
-**PERSONA:** [150-170 words describing ${isForParents ? 'parent\'s perspective and concerns' : 'client\'s internal experience'}]
-**Hook 1:** [Headline ${isForParents ? 'addressing parent concerns' : 'addressing client struggles'}] ([Subline])
-**Hook 2:** [Headline ${isForParents ? 'about helping their teen/child' : 'about therapeutic process'}] ([Subline]) 
-**Hook 3:** [Headline ${isForParents ? 'about parent empowerment' : 'about transformation'}] ([Subline])
 
-${isForParents ? 'Remember: Write for PARENTS of teens/children, not the teens/children themselves.' : 'Write for the adult client seeking therapy.'}`;
+**PERSONA:** [150-170 words with 2-3 paragraph breaks describing ${isForParents ? 'parent\'s perspective and concerns' : 'client\'s internal experience'}]
+
+**Hook 1:** [Headline ${isForParents ? 'addressing parent concerns' : 'addressing client struggles'}] ([Subline with clinical terms])
+**Hook 2:** [Headline ${isForParents ? 'about helping their teen/child' : 'about therapeutic process'}] ([Subline with methodology]) 
+**Hook 3:** [Headline ${isForParents ? 'about parent empowerment' : 'about transformation'}] ([Subline with expertise])
+
+CRITICAL: Break the persona into 2-3 readable paragraphs. ${isForParents ? 'Remember: Write for PARENTS of teens/children, not the teens/children themselves.' : 'Write for the adult client seeking therapy.'}`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -121,14 +124,18 @@ function parsePersonaContent(rawContent) {
     result.title = titleMatch[1].trim();
   }
 
-  // Extract persona
+  // Extract persona - preserve paragraph breaks
   const personaMatch = rawContent.match(/\*\*PERSONA:\*\*(.*?)(?=\*\*Hook|$)/s);
   if (personaMatch) {
-    result.persona = personaMatch[1].trim();
+    // Preserve paragraph structure and clean up formatting
+    result.persona = personaMatch[1]
+      .trim()
+      .replace(/\n\s*\n/g, '\n\n') // Normalize paragraph breaks
+      .replace(/^\s+/gm, ''); // Remove leading whitespace
   }
 
-  // Extract hooks
-  const hookMatches = rawContent.matchAll(/\*\*Hook \d+:\*\*(.*?)\(([^)]+)\)/g);
+  // Extract hooks with better parsing
+  const hookMatches = rawContent.matchAll(/\*\*Hook \d+:\*\*(.*?)\(([^)]+)\)/gs);
   for (const match of hookMatches) {
     result.hooks.push({
       headline: match[1].trim(),
