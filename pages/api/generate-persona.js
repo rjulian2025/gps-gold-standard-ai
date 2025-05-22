@@ -67,40 +67,42 @@ async function generatePersonaContent(therapistData) {
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  const personaPrompt = `Create a client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
+  const personaPrompt = `Write a client description for ${therapistName} who specializes in ${focus} and works with ${preferredClientType}.
 
-${isForParents ? 
-  'AUDIENCE: Write for PARENTS of struggling teens/children.' : 
-  'AUDIENCE: Write for ADULTS seeking therapy.'}
+${isForParents ? 'Focus on PARENTS dealing with troubled teens.' : 'Focus on ADULTS seeking therapy.'}
 
-CRITICAL RULES:
-- NEVER write "[Title] is a person who..."
-- Start with: "Sitting across from you..." or "Behind their..." or "They carry..."
-- Use only "they/them" pronouns
-- NO "How to Use" section
+FORMAT - Use this exact structure:
 
-STRUCTURE:
+**PERSONA TITLE:** [Create a compelling title]
 
-**PERSONA TITLE:** [Title]
+**PERSONA:** 
+Sitting across from you, [continue describing this person naturally using "they/them" pronouns only. Write 150-180 words about their experience, challenges, and emotional state. Never mention the persona title again.]
 
-**PERSONA:** [150-180 words, start naturally]
+**WHAT THEY NEED:** 
+[Write 45-55 words about what therapeutic support they require]
 
-**WHAT THEY NEED:** [45-55 words]
-
-**THERAPIST FIT:** [45-55 words]
+**THERAPIST FIT:** 
+You offer [45-55 words about why you're the right therapist for them, using "You" to address the therapist]
 
 **MARKETING HOOKS:**
 
-**[Headline 1]**
-[Subline 1]
+**[Compelling headline]**
+[Supporting text]
 
-**[Headline 2]**
-[Subline 2]
+**[Second headline]** 
+[Supporting text]
 
-**[Headline 3]**
-[Subline 3]
+**[Third headline]**
+[Supporting text]
 
-STOP after hooks. NO additional sections.`;
+CRITICAL: Stop writing after the third marketing hook. Do not add any instructions or "how to use" content.
+
+WRITING RULES:
+- Start persona with "Sitting across from you," or "Behind their composed exterior," or "They enter your office"
+- Use complete sentences with proper grammar
+- Never write "[Title] is a person" or "[Title] is someone"
+- Use "You" when addressing the therapist in Therapist Fit section
+- Use "they/them" for the client throughout`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -213,7 +215,24 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContent(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    console.log('✅ Generation complete');
+    // Simple content fixes
+    if (parsedPersona.persona) {
+      // Fix the most common grammar disasters
+      parsedPersona.persona = parsedPersona.persona
+        .replace(/\w+ is a person who sitting/gi, 'Sitting')
+        .replace(/\w+ is a person who/gi, 'They are someone who')
+        .replace(/who sitting/gi, 'who is sitting')
+        .replace(/who they/gi, 'who')
+        .replace(/You needs/gi, 'You need')
+        .replace(/They needs/gi, 'They need');
+    }
+    
+    if (parsedPersona.therapistFit) {
+      parsedPersona.therapistFit = parsedPersona.therapistFit
+        .replace(/You needs/gi, 'You need')
+        .replace(/You seeks/gi, 'You seek')
+        .replace(/You values/gi, 'You value');
+    }
 
     // Assemble final result
     const finalResult = {
