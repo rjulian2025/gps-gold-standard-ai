@@ -3,7 +3,7 @@ export default function Home() {
     <div style={{ padding: '2rem', fontFamily: 'system-ui' }}>
       <h1>GPS Gold Standard AI</h1>
       <p>Hardened AI system for generating therapist personas</p>
-      <p>Status: ✅ Deployment successful</p>
+      <p>Status: ✅ Ready for deployment</p>
       
       <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
         <h3>Available Endpoints:</h3>
