@@ -1,4 +1,4 @@
-// All-in-one AI API with CORS headers and Here's You section
+// All-in-one AI API with refined creative direction
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -35,41 +35,46 @@ async function callAnthropicAPI(prompt) {
 function createPersonaPrompt(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
 
-  return `You are an expert at creating ideal client personas for therapists. Generate exactly 1 persona with therapist approach and 3 marketing hooks.
+  return `You are a world-class creative director with a PhD in psychology, known for wise, thoughtful, and eloquent writing. Create an ideal client persona for this therapist.
 
 THERAPIST INFORMATION:
 - Name: ${therapistName}
 - Focus: ${focus}
 - Preferred Client Type: ${preferredClientType}
-- Fulfilling traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits || 'Not specified'}
-- Draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
+- What energizes them about clients: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits || 'Not specified'}
+- What drains them about clients: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
+
+WRITING STYLE:
+- Write like a wise friend, not a textbook
+- Use emotionally specific language that captures inner experience
+- Avoid therapy jargon and clinical terminology
+- Create vivid, relatable scenarios that feel human
+- Write with warmth, insight, and authenticity
 
 REQUIREMENTS:
-1. Create a "Here's You" section describing the therapist's approach and strengths (50-75 words)
-2. Create a 100-150 word persona describing the ideal client's inner experience
-3. Create 3 marketing hooks with headlines and sublines
-4. Write in an emotionally specific, authentic voice
-5. Avoid therapy clichés and clinical jargon
+1. "Here's You" section: Describe the therapist's unique approach and what makes them perfect for this client (60-80 words)
+2. Persona description: Paint a picture of the client's inner world, struggles, and readiness (120-150 words)
+3. Three marketing hooks: Emotionally resonant headlines with SEO-optimized sublines
 
 OUTPUT FORMAT (follow this EXACTLY):
-**PERSONA TITLE:** [Creative, specific title]
+**PERSONA TITLE:** [A compelling, specific title that captures their essence]
 
-**HERE'S YOU:** [50-75 word description of the therapist's approach, strengths, and what makes them uniquely suited for this client]
+**HERE'S YOU:** [60-80 words describing the therapist's approach, strengths, and unique fit for this client type. Focus on what makes them special and why this client would choose them.]
 
-**PERSONA:** [100-150 word narrative about the client's inner experience, struggles, and readiness for change]
+**PERSONA:** [120-150 words painting a vivid picture of the client's inner experience. Show don't tell - use specific scenarios, internal thoughts, and emotional moments. Make them feel real and three-dimensional.]
 
 **MARKETING HOOKS:**
 
-**Hook 1:** [Emotionally resonant headline]
-([SEO subline with relevant terms])
+**Hook 1:** [A headline that immediately resonates with the client's core struggle]
+([SEO subline with relevant therapy terms and location/specialty])
 
-**Hook 2:** [Emotionally resonant headline]
-([SEO subline with relevant terms])
+**Hook 2:** [A headline about their readiness for change or deeper work]
+([SEO subline emphasizing the therapeutic approach and client type])
 
-**Hook 3:** [Emotionally resonant headline]
-([SEO subline with relevant terms])
+**Hook 3:** [A headline about moving beyond surface solutions]
+([SEO subline highlighting transformation and outcomes])
 
-Generate the complete persona now following this exact format.`;
+Generate a persona that feels authentic, specific, and emotionally resonant. Make the therapist and client feel like real people, not concepts.`;
 }
 
 function parsePersonaOutput(rawOutput) {
@@ -96,14 +101,12 @@ function parsePersonaOutput(rawOutput) {
         currentSection = 'title';
       } else if (line.includes('**HERE\'S YOU:**')) {
         currentSection = 'heresYou';
-        // Capture any text after **HERE'S YOU:** on the same line
         const afterHeresYou = line.replace('**HERE\'S YOU:**', '').trim();
         if (afterHeresYou) {
           heresYouLines.push(afterHeresYou);
         }
       } else if (line.includes('**PERSONA:**')) {
         currentSection = 'persona';
-        // Capture any text after **PERSONA:** on the same line
         const afterPersona = line.replace('**PERSONA:**', '').trim();
         if (afterPersona) {
           personaLines.push(afterPersona);
@@ -111,34 +114,27 @@ function parsePersonaOutput(rawOutput) {
       } else if (line.includes('**MARKETING HOOKS:**')) {
         currentSection = 'hooks';
       } else if (line.includes('**Hook') && currentSection === 'hooks') {
-        // Save previous hook if exists
         if (currentHook) {
           result.hooks.push(currentHook);
         }
-        // Start new hook
         const hookText = line.replace(/\*\*Hook \d+:\*\*/, '').trim();
         currentHook = {
           headline: hookText,
           subline: ''
         };
       } else if (line.startsWith('(') && line.endsWith(')') && currentHook) {
-        // This is a subline for the current hook
-        currentHook.subline = line.slice(1, -1); // Remove parentheses
+        currentHook.subline = line.slice(1, -1);
       } else if (currentSection === 'heresYou' && line && !line.includes('**')) {
-        // Add to heresYou if we're in heresYou section and it's not a header
         heresYouLines.push(line);
       } else if (currentSection === 'persona' && line && !line.includes('**')) {
-        // Add to persona if we're in persona section and it's not a header
         personaLines.push(line);
       }
     }
     
-    // Add the last hook if exists
     if (currentHook) {
       result.hooks.push(currentHook);
     }
     
-    // Join lines
     result.heresYou = heresYouLines.join(' ').trim();
     result.persona = personaLines.join(' ').trim();
     
