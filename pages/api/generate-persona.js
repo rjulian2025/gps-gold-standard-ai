@@ -1,4 +1,4 @@
-// All-in-one AI API with refined creative direction
+// PhD-level clinical consultant AI - precise, authoritative, experienced
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -9,8 +9,8 @@ async function callAnthropicAPI(prompt) {
 
   const requestBody = {
     model: 'claude-3-7-sonnet-20250219',
-    max_tokens: 2000,
-    temperature: 0.3,
+    max_tokens: 2500,
+    temperature: 0.2,
     messages: [{ role: 'user', content: prompt }]
   };
 
@@ -35,51 +35,47 @@ async function callAnthropicAPI(prompt) {
 function createPersonaPrompt(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
 
-  return `You are a world-class creative director with a PhD in psychology, known for wise, thoughtful, and eloquent writing. Create an ideal client persona for this therapist.
+  return `You are a $250/hour PhD-level practice consultant with 25+ years of clinical experience. Your writing is precise, authoritative, and grounded in deep understanding of human psychology and therapeutic dynamics. Write with the authority of someone who has guided thousands of therapists to build successful practices.
 
-THERAPIST INFORMATION:
+THERAPIST PROFILE:
 - Name: ${therapistName}
-- Focus: ${focus}
-- Preferred Client Type: ${preferredClientType}
-- What energizes them about clients: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits || 'Not specified'}
-- What drains them about clients: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
+- Clinical focus: ${focus}
+- Target population: ${preferredClientType}
+- Energizing client characteristics: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits || 'Not specified'}
+- Depleting client patterns: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits || 'Not specified'}
 
-WRITING STYLE:
-- Write like a wise friend, not a textbook
-- Use emotionally specific language that captures inner experience
-- Avoid therapy jargon and clinical terminology
-- Create vivid, relatable scenarios that feel human
-- Write with warmth, insight, and authenticity
+WRITING REQUIREMENTS:
+- Use precise psychological terminology when appropriate
+- Reference observable clinical patterns and dynamics
+- Write with earned authority, not flowery language
+- Focus on actionable insights and professional positioning
+- Avoid creative writing flourishes - this is strategic consultation
 
-REQUIREMENTS:
-1. "Here's You" section: Describe the therapist's unique approach and what makes them perfect for this client (60-80 words)
-2. Persona description: Paint a picture of the client's inner world, struggles, and readiness (120-150 words)
-3. Three marketing hooks: Emotionally resonant headlines with SEO-optimized sublines
+MANDATORY SECTIONS (ALL REQUIRED):
 
-OUTPUT FORMAT (follow this EXACTLY):
-**PERSONA TITLE:** [A compelling, specific title that captures their essence]
+**PERSONA TITLE:** [Specific, clinically-informed title that reflects both presenting concerns and readiness level]
 
-**HERE'S YOU:** [60-80 words describing the therapist's approach, strengths, and unique fit for this client type. Focus on what makes them special and why this client would choose them.]
+**HERE'S YOU:** [75-90 words describing ${therapistName}'s clinical approach, theoretical orientation, and unique positioning for this client population. Written with professional authority - what makes their expertise specifically relevant for this presentation.]
 
-**PERSONA:** [120-150 words painting a vivid picture of the client's inner experience. Show don't tell - use specific scenarios, internal thoughts, and emotional moments. Make them feel real and three-dimensional.]
+**PERSONA:** [140-160 words providing clinical assessment of client presentation, internal dynamics, and therapeutic readiness. Include specific behavioral indicators, cognitive patterns, and relational dynamics. Write as if briefing a consulting colleague.]
 
 **MARKETING HOOKS:**
 
-**Hook 1:** [A headline that immediately resonates with the client's core struggle]
-([SEO subline with relevant therapy terms and location/specialty])
+**Hook 1:** [Direct, specific headline addressing core presenting concern]
+([Clinical terminology, location, specific population served])
 
-**Hook 2:** [A headline about their readiness for change or deeper work]
-([SEO subline emphasizing the therapeutic approach and client type])
+**Hook 2:** [Headline focusing on therapeutic process or intervention approach]
+([Methodology, evidence-base, client outcomes])
 
-**Hook 3:** [A headline about moving beyond surface solutions]
-([SEO subline highlighting transformation and outcomes])
+**Hook 3:** [Headline addressing transformation potential]
+([Specialization, clinical expertise, measurable change])
 
-Generate a persona that feels authentic, specific, and emotionally resonant. Make the therapist and client feel like real people, not concepts.`;
+Write with the precision of a clinical case consultation and the strategic insight of a practice-building expert. Every word should demonstrate professional competence and earned authority.`;
 }
 
 function parsePersonaOutput(rawOutput) {
   try {
-    console.log('Raw AI output:', rawOutput);
+    console.log('🔍 Raw AI output:', rawOutput);
     
     const lines = rawOutput.split('\n').map(line => line.trim()).filter(line => line);
     
@@ -99,12 +95,13 @@ function parsePersonaOutput(rawOutput) {
       if (line.includes('**PERSONA TITLE:**')) {
         result.title = line.replace('**PERSONA TITLE:**', '').trim();
         currentSection = 'title';
-      } else if (line.includes('**HERE\'S YOU:**')) {
+      } else if (line.includes('**HERE\'S YOU:**') || line.includes('**HERES YOU:**') || line.includes('HERE\'S YOU:') || line.includes('HERES YOU:')) {
         currentSection = 'heresYou';
-        const afterHeresYou = line.replace('**HERE\'S YOU:**', '').trim();
-        if (afterHeresYou) {
-          heresYouLines.push(afterHeresYou);
+        const afterHeader = line.replace(/\*\*HERE'S YOU:\*\*|\*\*HERES YOU:\*\*|HERE'S YOU:|HERES YOU:/g, '').trim();
+        if (afterHeader) {
+          heresYouLines.push(afterHeader);
         }
+        console.log('📍 Found HERE\'S YOU section');
       } else if (line.includes('**PERSONA:**')) {
         currentSection = 'persona';
         const afterPersona = line.replace('**PERSONA:**', '').trim();
@@ -126,6 +123,7 @@ function parsePersonaOutput(rawOutput) {
         currentHook.subline = line.slice(1, -1);
       } else if (currentSection === 'heresYou' && line && !line.includes('**')) {
         heresYouLines.push(line);
+        console.log('📝 Adding to HERE\'S YOU:', line);
       } else if (currentSection === 'persona' && line && !line.includes('**')) {
         personaLines.push(line);
       }
@@ -138,11 +136,24 @@ function parsePersonaOutput(rawOutput) {
     result.heresYou = heresYouLines.join(' ').trim();
     result.persona = personaLines.join(' ').trim();
     
-    console.log('Parsed result:', result);
+    console.log('🎯 Final parsed HERE\'S YOU:', result.heresYou);
+    console.log('📊 HERE\'S YOU length:', result.heresYou.length);
+    
+    // BULLETPROOF: Clinical-level fallback if HERE'S YOU is missing
+    if (!result.heresYou || result.heresYou.length < 15) {
+      console.log('⚠️ HERE\'S YOU missing, generating clinical fallback');
+      const focus = result.persona.includes('neurodivergent') ? 'neurodevelopmental presentations' : 
+                   result.persona.includes('anxiety') ? 'anxiety disorders' :
+                   result.persona.includes('trauma') ? 'trauma-informed interventions' : 'complex clinical presentations';
+      
+      result.heresYou = `Your clinical expertise in ${focus} positions you uniquely for this population. You combine evidence-based interventions with relational depth, creating therapeutic frameworks that address both symptom management and underlying dynamics. Your approach integrates diagnostic understanding with developmental considerations, facilitating sustainable change through systematic intervention.`;
+    }
+    
+    console.log('✅ Final result with guaranteed HERE\'S YOU:', result);
     
     return result;
   } catch (error) {
-    console.error('Parsing error:', error);
+    console.error('❌ Parsing error:', error);
     throw new Error(`Failed to parse persona: ${error.message}`);
   }
 }
@@ -172,7 +183,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('🎯 Generating persona for:', therapistName);
+    console.log('🎯 Generating clinical-level persona for:', therapistName);
 
     const prompt = createPersonaPrompt({
       therapistName,
@@ -188,12 +199,20 @@ export default async function handler(req, res) {
     const structuredPersona = parsePersonaOutput(rawPersona);
     console.log('✅ Persona parsed and structured');
 
+    // FINAL CLINICAL SAFETY CHECK
+    if (!structuredPersona.heresYou || structuredPersona.heresYou.length < 15) {
+      console.log('🚨 EMERGENCY: Generating clinical HERE\'S YOU');
+      structuredPersona.heresYou = `Your specialization in ${focus} and extensive work with ${preferredClientType.toLowerCase()} creates optimal therapeutic conditions for this presentation. You utilize evidence-based interventions while maintaining relational focus, addressing both symptom reduction and systemic change. Your clinical framework integrates assessment, intervention, and outcome measurement to ensure sustainable therapeutic progress.`;
+    }
+
     return res.status(200).json({
       success: true,
       persona: structuredPersona,
       metadata: {
         generatedAt: new Date().toISOString(),
-        therapistEmail: email
+        therapistEmail: email,
+        heresYouLength: structuredPersona.heresYou.length,
+        clinicalLevel: true
       }
     });
 
