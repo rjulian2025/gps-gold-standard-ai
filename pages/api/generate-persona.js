@@ -83,7 +83,7 @@ async function generatePersonaContent(therapistData) {
     - Use third person pronouns (they/them/their)
     - Focus on client's internal experience and readiness`;
 
-  const personaPrompt = `Generate a client persona for ${therapistName} who specializes in ${focus} working with ${preferredClientType}.
+  const personaPrompt = `Generate a complete client persona for ${therapistName} who specializes in ${focus} working with ${preferredClientType}.
 
 ${audienceInstructions}
 
@@ -91,22 +91,37 @@ WRITING REQUIREMENTS:
 - Gold standard like "The Quiet Reactor" - observational, clinical precision
 - NO NAMES - use appropriate pronouns
 - Vary sentence structures - don't start consecutive sentences with same pronoun
-- BREAK INTO 2-3 PARAGRAPHS for readability - use paragraph breaks in the persona description
-- 150-170 words total describing the ${isForParents ? 'parent\'s' : 'client\'s'} experience and therapeutic readiness
+- BREAK INTO 2-3 PARAGRAPHS for readability
+- 150-170 words total for persona description
 
 Client energizing traits: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 Client draining traits: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (EXACT):
 **PERSONA TITLE:** [Title - ${isForParents ? 'focus on parent experience' : 'focus on client type'}]
 
 **PERSONA:** [150-170 words with 2-3 paragraph breaks describing ${isForParents ? 'parent\'s perspective and concerns' : 'client\'s internal experience'}]
 
-**Hook 1:** [Headline ${isForParents ? 'addressing parent concerns' : 'addressing client struggles'}] ([Subline with clinical terms])
-**Hook 2:** [Headline ${isForParents ? 'about helping their teen/child' : 'about therapeutic process'}] ([Subline with methodology]) 
-**Hook 3:** [Headline ${isForParents ? 'about parent empowerment' : 'about transformation'}] ([Subline with expertise])
+**WHAT THEY NEED:** [50-60 words describing what this client specifically needs from therapy and the therapeutic relationship]
 
-CRITICAL: Break the persona into 2-3 readable paragraphs. ${isForParents ? 'Remember: Write for PARENTS of teens/children, not the teens/children themselves.' : 'Write for the adult client seeking therapy.'}`;
+**THERAPIST FIT:** [50-60 words describing what kind of therapist works best with this client and why ${therapistName} is a good match]
+
+**MARKETING HOOKS:**
+
+**Finding [Something Specific]** 
+[Descriptive subline about the therapeutic approach] 
+
+**[Action Word] [Something Meaningful]**
+[Subline about methodology or outcomes]
+
+**From [Current State] to [Desired State]**
+[Subline about specialization and expertise]
+
+CRITICAL: 
+- Write specific, compelling hook headlines - not generic phrases
+- Make sublines descriptive and professional
+- Ensure all sections are substantive and specific to this client type
+- ${isForParents ? 'Remember: Write for PARENTS of teens/children.' : 'Write for the adult client seeking therapy.'}`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -115,8 +130,12 @@ function parsePersonaContent(rawContent) {
   const result = {
     title: '',
     persona: '',
+    whatTheyNeed: '',
+    therapistFit: '',
     hooks: []
   };
+
+  console.log('🔍 Parsing complete persona content...');
 
   // Extract title
   const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
@@ -125,23 +144,57 @@ function parsePersonaContent(rawContent) {
   }
 
   // Extract persona - preserve paragraph breaks
-  const personaMatch = rawContent.match(/\*\*PERSONA:\*\*(.*?)(?=\*\*Hook|$)/s);
+  const personaMatch = rawContent.match(/\*\*PERSONA:\*\*(.*?)(?=\*\*WHAT THEY NEED|\*\*Hook|$)/s);
   if (personaMatch) {
-    // Preserve paragraph structure and clean up formatting
     result.persona = personaMatch[1]
       .trim()
       .replace(/\n\s*\n/g, '\n\n') // Normalize paragraph breaks
       .replace(/^\s+/gm, ''); // Remove leading whitespace
   }
 
-  // Extract hooks with better parsing
-  const hookMatches = rawContent.matchAll(/\*\*Hook \d+:\*\*(.*?)\(([^)]+)\)/gs);
-  for (const match of hookMatches) {
-    result.hooks.push({
-      headline: match[1].trim(),
-      subline: match[2].trim()
-    });
+  // Extract What They Need
+  const whatTheyNeedMatch = rawContent.match(/\*\*WHAT THEY NEED:\*\*(.*?)(?=\*\*THERAPIST FIT|\*\*Hook|\*\*MARKETING|$)/s);
+  if (whatTheyNeedMatch) {
+    result.whatTheyNeed = whatTheyNeedMatch[1].trim();
   }
+
+  // Extract Therapist Fit
+  const therapistFitMatch = rawContent.match(/\*\*THERAPIST FIT:\*\*(.*?)(?=\*\*MARKETING|\*\*Hook|$)/s);
+  if (therapistFitMatch) {
+    result.therapistFit = therapistFitMatch[1].trim();
+  }
+
+  // Extract hooks - look for the new format without numbers
+  const hookPattern = /\*\*([^*]+?)\*\*\s*\n([^*\n]+?)(?=\n\*\*|\n\n|$)/g;
+  const hookMatches = [...rawContent.matchAll(hookPattern)];
+  
+  // Skip title, persona, what they need, therapist fit - only get marketing hooks
+  const marketingStart = rawContent.indexOf('**MARKETING HOOKS:**');
+  if (marketingStart > -1) {
+    const marketingSection = rawContent.substring(marketingStart);
+    const marketingHookMatches = [...marketingSection.matchAll(hookPattern)];
+    
+    for (const match of marketingHookMatches) {
+      const headline = match[1].trim();
+      const subline = match[2].trim();
+      
+      // Skip section headers
+      if (!headline.includes('MARKETING HOOKS') && headline.length > 0) {
+        result.hooks.push({
+          headline: headline,
+          subline: subline
+        });
+      }
+    }
+  }
+
+  console.log('✅ Parsed sections:', {
+    title: !!result.title,
+    persona: !!result.persona,
+    whatTheyNeed: !!result.whatTheyNeed,
+    therapistFit: !!result.therapistFit,
+    hooks: result.hooks.length
+  });
 
   return result;
 }
@@ -199,6 +252,8 @@ export default async function handler(req, res) {
       title: parsedPersona.title || (isForParents ? 'The Concerned Parent' : 'The Thoughtful Client'),
       heresYou: heresYouContent.trim() || `Your expertise in ${focus} and experience working with ${preferredClientType.toLowerCase()} creates optimal therapeutic conditions for this population. You understand the unique challenges ${isForParents ? 'parents face when their teen/child is struggling' : 'they face'} and have developed specialized approaches that ${isForParents ? 'support both the family system and the individual' : 'honor their developmental needs while facilitating meaningful growth'}.`,
       persona: parsedPersona.persona || '',
+      whatTheyNeed: parsedPersona.whatTheyNeed || `${isForParents ? 'These parents' : 'These clients'} need a therapeutic relationship built on genuine understanding and specialized expertise that addresses their unique challenges.`,
+      therapistFit: parsedPersona.therapistFit || `The right therapist offers both professional expertise and authentic human connection, understanding their unique presentation and needs.`,
       hooks: parsedPersona.hooks || []
     };
 
