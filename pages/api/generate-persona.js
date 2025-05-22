@@ -1,6 +1,6 @@
 import { createPersonaPrompt, createValidationPrompt } from '../../lib/prompts.js';
-import { callAnthropicAPI } from '../../lib/anthropic';
-import { validatePersonaQuality } from '../../lib/validation';
+import { callAnthropicAPI } from '../../lib/anthropic.js';
+import { validatePersonaQuality } from '../../lib/validation.js';
 
 export default async function handler(req, res) {
   // Only allow POST requests
