@@ -64,7 +64,7 @@ async function generatePersonaContentV2(therapistData) {
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  // SIMPLIFIED PROMPT - No complex instructions
+  // NUCLEAR SIMPLIFIED PROMPT - No problematic sections
   const personaPrompt = `Write about a client seeking therapy for ${focus}.
 
 Write exactly this format:
@@ -75,12 +75,9 @@ Write exactly this format:
 Behind their composed exterior lies someone who [write 150 words about their inner experience with ${focus}. Use they/them pronouns.]
 
 **WHAT THEY NEED** 
-[Write 50 words: They need specific help with ${focus} including...]
+They need specific help with ${focus} including [write 50 words about their therapeutic needs]
 
-**THERAPIST FIT**
-[Write 50 words: You understand ${focus} and provide...]
-
-Keep it simple and professional. Write only these sections.`;
+Keep it simple and professional. Write only these sections - no therapist fit or hooks.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -195,7 +192,7 @@ export default async function handler(req, res) {
       heresYou: heresYouContent.trim(),
       persona: parsedPersona.persona || '',
       whatTheyNeed: parsedPersona.whatTheyNeed || '',
-      therapistFit: parsedPersona.therapistFit || '',
+      therapistFit: '', // ELIMINATED - No more garbage
       hooks: []
     };
 
@@ -205,20 +202,12 @@ export default async function handler(req, res) {
     // FORCE clean content regardless of what was generated
     finalResult.whatTheyNeed = `They need specialized ${focus.toLowerCase()} treatment that addresses both symptoms and underlying patterns. Support in developing practical coping strategies and rebuilding emotional resilience is essential.`;
     
-    finalResult.therapistFit = `You understand how ${focus.toLowerCase()} affects individuals and can provide both evidence-based treatment and compassionate support for their healing journey.`;
-
-    // FINAL CLEANUP PASS - Double protection
-    if (finalResult.heresYou) {
-      finalResult.heresYou = finalResult.heresYou
-        .replace(/# Here's You You/gi, 'You')
-        .replace(/^# Here's You\s*/gi, '')
-        .replace(/You You /gi, 'You ')
-        .trim();
-    }
+    // ELIMINATED SECTION - No therapist fit to avoid garbage
+    finalResult.therapistFit = '';
 
     console.log('🔧 NUCLEAR - Final whatTheyNeed:', finalResult.whatTheyNeed);
-    console.log('🔧 NUCLEAR - Final therapistFit:', finalResult.therapistFit);
-    console.log('🎉 V2 with NUCLEAR override complete');
+    console.log('🔧 NUCLEAR - Therapist Fit ELIMINATED');
+    console.log('🎉 V2 with NUCLEAR elimination complete');
 
     return res.status(200).json({
       success: true,
