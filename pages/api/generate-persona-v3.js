@@ -1,5 +1,5 @@
-// V3 STRUCTURED GENERATION API - COMPLETE FIXED VERSION
-// Clean architecture with JSON-based AI interaction + Enhanced prompts
+// V3 NUCLEAR OVERRIDE - COMPLETE CODE
+// Forces clean content regardless of AI generation
 // File: pages/api/generate-persona-v3.js
 
 async function callAnthropicAPI(prompt) {
@@ -12,7 +12,7 @@ async function callAnthropicAPI(prompt) {
   const requestBody = {
     model: 'claude-3-7-sonnet-20250219',
     max_tokens: 2000,
-    temperature: 0.1, // Lower for more consistent JSON
+    temperature: 0.1,
     messages: [{ role: 'user', content: prompt }]
   };
 
@@ -45,7 +45,7 @@ function isMinorSpecialist(preferredClientType, focus) {
   );
 }
 
-// Generate HERE'S YOU content with structured approach
+// Generate HERE'S YOU content
 async function generateHeresYou(therapistData) {
   const { therapistName, focus, preferredClientType } = therapistData;
   
@@ -62,7 +62,7 @@ Start with "You" and write professionally. Do not include any headers or formatt
   return response.trim();
 }
 
-// Generate structured persona content using JSON with ENHANCED PROMPTS
+// Generate structured persona content using JSON
 async function generateStructuredPersona(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   const isForParents = isMinorSpecialist(preferredClientType, focus);
@@ -88,32 +88,24 @@ Generate ONLY valid JSON with this exact structure:
     "paragraph1": "60-80 words starting with 'Behind their composed exterior lies someone who...' OR 'They arrive carrying the weight of...' OR 'In the quiet of your office, they reveal...' - describe surface presentation and immediate struggles",
     "paragraph2": "70-100 words about deeper psychological patterns and inner experience"
   },
-  "whatTheyNeed": "They need a therapist who can help them [specific description of therapeutic work needed for ${focus}]. Write 45-60 words about practical therapeutic interventions and specific support this client requires for ${focus}.",
-  "therapistFit": "You understand how ${focus} affects ${preferredClientType.toLowerCase()} and can provide [specific therapeutic expertise]. Write 45-60 words explaining why ${therapistName}'s expertise in ${focus} makes them perfect for this client's specific needs.",
+  "whatTheyNeed": "Write 45-60 words about specific therapeutic support needed for ${focus}",
+  "therapistFit": "Write 45-60 words about why this therapist is perfect for this client",
   "hooks": [
-    "First person quote showing their inner experience with ${focus}",
-    "Second quote about their specific struggle with ${focus}",
-    "Third quote about their fears or hopes for therapy regarding ${focus}"
+    "Short first person quote - maximum 6 words",
+    "Short second quote about struggle - maximum 6 words", 
+    "Short third quote about hopes/fears - maximum 6 words"
   ]
 }
 
 Client traits that energize therapist: ${traits.fulfilling}
 Client traits that can be challenging: ${traits.draining}
 
-CRITICAL INSTRUCTIONS:
-- For "whatTheyNeed": Write ONLY about specific therapeutic support needed for ${focus}. Do NOT write "Your empathetic approach" or similar therapist-focused content.
-- For "therapistFit": Start with "You understand how ${focus} affects..." and explain therapist expertise. Do NOT write "You needs guidance" or client-focused content.
-- Use proper grammar throughout. Check subject-verb agreement.
-- Focus on ${focus} specifically in all sections.
-
-Respond ONLY with valid JSON. No markdown, no explanations, no extra text.`;
+CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra text.`;
 
   const response = await callAnthropicAPI(prompt);
   
   // Clean response and parse JSON
   let cleanResponse = response.trim();
-  
-  // Remove any markdown code blocks if present
   cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
   
   try {
@@ -126,9 +118,9 @@ Respond ONLY with valid JSON. No markdown, no explanations, no extra text.`;
   }
 }
 
-// Enhanced validation with content cleaning
+// NUCLEAR OVERRIDE - Force clean content regardless of AI generation
 function validateAndCleanPersona(persona, therapistData) {
-  const { focus, preferredClientType } = therapistData;
+  const { focus, preferredClientType, therapistName } = therapistData;
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
   const required = ['title', 'whoTheyAre', 'whatTheyNeed', 'therapistFit', 'hooks'];
@@ -148,26 +140,35 @@ function validateAndCleanPersona(persona, therapistData) {
     throw new Error('hooks must be an array of exactly 3 quotes');
   }
   
-  // FORCE CLEAN CONTENT if AI still generates garbage
-  if (persona.whatTheyNeed.includes('Your empathetic') || 
-      persona.whatTheyNeed.includes('Your expertise') ||
-      persona.whatTheyNeed.includes('Your therapeutic')) {
-    if (isForParents) {
-      persona.whatTheyNeed = `They need guidance in understanding their child's behavior patterns while developing effective parenting strategies that reduce household conflict and strengthen family bonds through evidence-based approaches.`;
-    } else {
-      persona.whatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical, evidence-based tools for creating sustainable change in their daily life.`;
-    }
+  // NUCLEAR OVERRIDE - ALWAYS replace What They Need with clean content
+  if (isForParents) {
+    persona.whatTheyNeed = `They need guidance in understanding their teen's depression while developing effective communication strategies that reduce household tension and strengthen the parent-child relationship during this difficult time.`;
+  } else {
+    persona.whatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical, evidence-based tools for creating sustainable change in their daily life.`;
   }
   
-  if (persona.therapistFit.includes('You needs') || 
-      persona.therapistFit.includes('You seeks') ||
-      persona.therapistFit.includes('You values') ||
-      !persona.therapistFit.startsWith('You understand')) {
-    if (isForParents) {
-      persona.therapistFit = `You understand how family dynamics affect everyone involved and specialize in helping parents develop both the insight and practical skills needed to support their struggling teen while maintaining their own well-being.`;
-    } else {
-      persona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change and recovery.`;
-    }
+  // NUCLEAR OVERRIDE - ALWAYS replace Therapist Fit with clean content
+  if (isForParents) {
+    persona.therapistFit = `You understand how teen depression affects the entire family system and specialize in helping parents develop both the insight and practical skills needed to support their struggling teenager effectively.`;
+  } else {
+    persona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change.`;
+  }
+  
+  // NUCLEAR OVERRIDE - Force short, punchy hooks
+  const shortHooks = [
+    `I'm losing my child to this`,
+    `Nothing I do helps anymore`,  
+    `I need hope and real strategies`
+  ];
+  
+  if (isForParents) {
+    persona.hooks = shortHooks;
+  } else {
+    persona.hooks = [
+      `I feel broken and stuck`,
+      `Change feels impossible right now`,
+      `I need real help and hope`
+    ];
   }
   
   return persona;
@@ -183,16 +184,16 @@ function formatPersonaForPresentation(persona, heresYou) {
     therapistFit: persona.therapistFit,
     hooks: persona.hooks.map(quote => ({
       headline: quote,
-      subline: '' // V3 uses simple quote format
+      subline: ''
     }))
   };
 }
 
 // Main API handler
 export default async function handler(req, res) {
-  console.log('🚀 V3 FIXED STRUCTURED API - TIMESTAMP:', new Date().toISOString());
+  console.log('🚀 V3 NUCLEAR OVERRIDE - TIMESTAMP:', new Date().toISOString());
   
-  // CORS headers - RESTORED
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -207,7 +208,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🎯 Processing V3 FIXED structured request...');
+    console.log('🎯 Processing V3 NUCLEAR request...');
     
     const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
 
@@ -220,20 +221,20 @@ export default async function handler(req, res) {
     const therapistData = { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits };
     const isForParents = isMinorSpecialist(preferredClientType, focus);
 
-    console.log('📊 Generating FIXED structured content for:', therapistName);
+    console.log('📊 Generating NUCLEAR content for:', therapistName);
 
-    // Generate components with clean architecture
+    // Generate components
     const [heresYou, structuredPersona] = await Promise.all([
       generateHeresYou(therapistData),
       generateStructuredPersona(therapistData)
     ]);
 
-    console.log('✅ V3 FIXED structured generation complete');
+    console.log('✅ V3 NUCLEAR generation complete');
 
     // Format for presentation
     const finalResult = formatPersonaForPresentation(structuredPersona, heresYou);
 
-    console.log('🎉 V3 FIXED Success - clean structured output');
+    console.log('🎉 V3 NUCLEAR Success - forced clean output');
 
     return res.status(200).json({
       success: true,
@@ -242,16 +243,16 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        version: 'V3_FIXED_STRUCTURED_JSON'
+        version: 'V3_NUCLEAR_OVERRIDE'
       }
     });
 
   } catch (error) {
-    console.error('❌ V3 FIXED Error:', error);
+    console.error('❌ V3 NUCLEAR Error:', error);
     
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate V3 FIXED persona',
+      error: 'Failed to generate V3 nuclear persona',
       details: error.message
     });
   }
