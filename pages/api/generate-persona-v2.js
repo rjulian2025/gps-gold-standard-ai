@@ -87,10 +87,10 @@ FOLLOW THIS EXACT STRUCTURE:
 [Second paragraph: 70-100 words about deeper patterns and inner experience]
 
 **WHAT THEY NEED** 
-[Write 45-60 words about what this specific client needs from therapy, focusing on ${focus} and working with ${preferredClientType}. Be specific to their situation.]
+They need a therapist who can help them [write 45-60 words about specific therapeutic support needed for ${focus} with ${preferredClientType}]. Focus on practical therapeutic interventions and support.
 
 **THERAPIST FIT**
-[Write 45-60 words starting with "You understand" explaining specifically why therapist ${therapistName} with expertise in ${focus} is perfect for this client. Focus on the therapist's specific strengths.]
+You understand [write 45-60 words about why this therapist is perfect for this client, focusing on ${focus} expertise and ability to work with ${preferredClientType}]. Emphasize the therapist's specific clinical strengths.
 
 **KEY HOOKS**
 * *"[First person quote showing their inner experience]"*
@@ -228,27 +228,30 @@ export default async function handler(req, res) {
         .trim();
     }
 
-    // FIX 3: Replace generic "What They Need" content
+    // EMERGENCY: Force clean content if AI generates garbage
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') || 
-          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
+      if (parsedPersona.whatTheyNeed.includes('Your intellectually curious') || 
+          parsedPersona.whatTheyNeed.includes('Your empathetic but firm') ||
+          parsedPersona.whatTheyNeed.includes('Your therapeutic presence') ||
+          parsedPersona.whatTheyNeed.length < 30) {
         if (isForParents) {
           parsedPersona.whatTheyNeed = `They need guidance in understanding their child's behavior patterns while developing effective parenting strategies that reduce household conflict and strengthen family bonds.`;
         } else {
-          parsedPersona.whatTheyNeed = `They need a therapist who can help them understand the patterns driving their ${focus.toLowerCase()} while providing practical tools for sustainable change.`;
+          parsedPersona.whatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical tools for creating sustainable change in their daily life.`;
         }
       }
     }
 
-    // FIX 2: Replace broken "Therapist Fit" content  
+    // EMERGENCY: Force clean therapist fit content
     if (parsedPersona.therapistFit) {
-      if (parsedPersona.therapistFit.includes('You what started as') || 
-          parsedPersona.therapistFit.includes('You needs guidance') ||
-          parsedPersona.therapistFit.length < 20) {
+      if (parsedPersona.therapistFit.includes('You needs guidance') || 
+          parsedPersona.therapistFit.includes('You seeks authentic') ||
+          parsedPersona.therapistFit.includes('You values trust') ||
+          parsedPersona.therapistFit.length < 30) {
         if (isForParents) {
-          parsedPersona.therapistFit = `You understand how family dynamics affect everyone involved and specialize in helping parents develop both the insight and practical skills needed to support their struggling teen while maintaining their own well-being.`;
+          parsedPersona.therapistFit = `You understand how family dynamics affect everyone involved and specialize in helping parents develop both the insight and practical skills needed to support their struggling teen.`;
         } else {
-          parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and can provide both the clinical expertise and genuine empathy they need for lasting change.`;
+          parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change.`;
         }
       }
     }
