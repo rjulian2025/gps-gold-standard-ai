@@ -64,34 +64,23 @@ async function generatePersonaContentV2(therapistData) {
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  const personaPrompt = `Write a client description for ${therapistName}.
+  // SIMPLIFIED PROMPT - No complex instructions
+  const personaPrompt = `Write about a client seeking therapy for ${focus}.
 
-Focus: ${focus}
-Client Type: ${preferredClientType}
+Write exactly this format:
 
-FORMAT:
-
-**PERSONA TITLE:** [Write 2-3 words only]
+**PERSONA TITLE:** [2-3 words describing this client]
 
 **WHO THEY ARE**
-Behind their composed exterior lies someone who [write 150-180 words describing their psychological state, behaviors, and challenges. Use "they/them" pronouns throughout.]
+Behind their composed exterior lies someone who [write 150 words about their inner experience with ${focus}. Use they/them pronouns.]
 
 **WHAT THEY NEED** 
-They need [write 45-60 words about specific therapeutic support for their ${focus} challenges]
+[Write 50 words: They need specific help with ${focus} including...]
 
 **THERAPIST FIT**
-You understand [write 45-60 words about why your ${focus} expertise helps this client specifically]
+[Write 50 words: You understand ${focus} and provide...]
 
-WRITING RULES:
-- Keep persona title SHORT (2-3 words maximum)
-- Start "Who They Are" with "Behind their composed exterior lies someone who..."
-- Use "they/them" pronouns only, never names or demographics
-- Focus on psychological insights, not surface details
-- Make "What They Need" and "Therapist Fit" specific to ${focus}
-- Use complete sentences with proper grammar
-- STOP after Therapist Fit section - write nothing else
-
-Write naturally and professionally.`;
+Keep it simple and professional. Write only these sections.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -164,81 +153,54 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // NUCLEAR-LEVEL GRAMMAR FILTER - Catch everything
-    console.log('🔧 Applying nuclear grammar filter...');
+    // ULTIMATE NUCLEAR GRAMMAR REPLACEMENT
+    console.log('🔧 Applying ultimate grammar replacement...');
     
-    // Filter persona content
-    if (parsedPersona.persona) {
-      const originalPersona = parsedPersona.persona.substring(0, 100);
-      
-      parsedPersona.persona = parsedPersona.persona
-        // NUCLEAR: Fix title contamination patterns
-        .replace(/^.*Adult Struggling with is a person who/gi, '')
-        .replace(/^.*Struggling with is a person who/gi, '')
-        .replace(/^.*Profile is a person who/gi, '')
-        .replace(/^.*Client Profile is a person who/gi, '')
-        .replace(/^.*is a person who/gi, '')
-        .replace(/\w+ is a person who sitting/gi, 'Sitting')
-        .replace(/\w+ is a person who behind/gi, 'Behind')
-        // Remove name insertions that sneak in
-        .replace(/Rick is a high-functioning/gi, 'They are a high-functioning')
-        .replace(/Rick is a/gi, 'They are a')
-        .replace(/Rick has/gi, 'They have')
-        // Fix mysterious "You" replacements
-        .replace(/You their/gi, 'Their')
-        .replace(/You each/gi, 'Each')
-        .replace(/You the/gi, 'The')
-        .replace(/You behind/gi, 'Behind')
-        .replace(/You despite/gi, 'Despite')
-        // Fix grammar fragments
-        .replace(/who sitting/gi, 'who is sitting')
-        .replace(/who they/gi, 'who')
-        .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
-        // Clean up incomplete sentences
-        .replace(/They arrive with,/gi, 'They arrive with visible signs of stress,')
-        .replace(/In the quiet of your office,/gi, 'In the quiet of your office, they')
-        // Remove demographics if they sneak in
-        .replace(/A \d+-year-old \w+/gi, 'They')
-        .replace(/\d+-year-old/gi, '')
-        .replace(/in their 30s or 40s/gi, '')
-        .replace(/30s or 40s/gi, '')
-        .trim();
-      
-      console.log('🔧 Original:', originalPersona);
-      console.log('🔧 Filtered:', parsedPersona.persona.substring(0, 100));
-    }
-    
-    // NUCLEAR cleanup of "What They Need" - Replace ALL garbage
+    // COMPLETELY REPLACE known garbage patterns
     if (parsedPersona.whatTheyNeed) {
-      // Check for ANY of the garbage patterns
-      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') ||
-          parsedPersona.whatTheyNeed.includes('Your intellectually curious') ||
-          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship') ||
-          parsedPersona.whatTheyNeed.includes('Your expertise in identifying') ||
-          parsedPersona.whatTheyNeed.includes('Your therapeutic presence')) {
+      // Check for ANY garbage and replace entirely
+      if (parsedPersona.whatTheyNeed.includes('Your') || 
+          parsedPersona.whatTheyNeed.includes('honest about struggles') ||
+          parsedPersona.whatTheyNeed.includes('empathetic but firm approach') ||
+          parsedPersona.whatTheyNeed.includes('Build a trusting') ||
+          parsedPersona.whatTheyNeed.includes('expertise in identifying') ||
+          parsedPersona.whatTheyNeed.includes('therapeutic presence')) {
         
-        parsedPersona.whatTheyNeed = `They need addiction treatment that addresses both the substance use and underlying emotional patterns. Support for breaking through denial while building sustainable recovery strategies is essential.`;
+        // Generate focus-specific content
+        const focusLower = focus.toLowerCase();
+        if (focusLower.includes('depression')) {
+          parsedPersona.whatTheyNeed = `They need depression treatment that addresses both symptoms and underlying patterns. Support in developing coping strategies and rebuilding emotional resilience is essential.`;
+        } else if (focusLower.includes('addiction')) {
+          parsedPersona.whatTheyNeed = `They need addiction treatment addressing both substance use and underlying emotional triggers. Support in breaking denial patterns while building sustainable recovery skills.`;
+        } else if (focusLower.includes('anxiety')) {
+          parsedPersona.whatTheyNeed = `They need anxiety treatment that helps them understand their triggers and develop practical coping mechanisms for managing overwhelming feelings.`;
+        } else {
+          parsedPersona.whatTheyNeed = `They need specialized support that addresses their specific challenges with ${focusLower} while building practical strategies for lasting change.`;
+        }
       }
     }
     
-    // NUCLEAR cleanup of "Therapist Fit" - Replace ALL garbage
+    // COMPLETELY REPLACE garbage Therapist Fit
     if (parsedPersona.therapistFit) {
-      // Check for ANY of the garbage patterns
-      if (parsedPersona.therapistFit.includes('You needs guidance') ||
-          parsedPersona.therapistFit.includes('You seeks authentic connection') ||
-          parsedPersona.therapistFit.includes('You values trust and expertise') ||
-          parsedPersona.therapistFit.includes('You their eyes') ||
-          parsedPersona.therapistFit.includes('emotional challenges')) {
-          
-        parsedPersona.therapistFit = `You understand the complexity of high-functioning addiction and can provide the structured yet compassionate approach they need for lasting recovery.`;
+      // If ANY garbage detected, replace entirely
+      if (parsedPersona.therapistFit.includes('You needs') || 
+          parsedPersona.therapistFit.includes('You seeks') ||
+          parsedPersona.therapistFit.includes('You values') ||
+          parsedPersona.therapistFit.includes('emotional challenges') ||
+          parsedPersona.therapistFit.includes('authentic connection and understanding')) {
+        
+        // Generate focus-specific content
+        const focusLower = focus.toLowerCase();
+        if (focusLower.includes('depression')) {
+          parsedPersona.therapistFit = `You understand how depression affects daily functioning and can provide both evidence-based treatment and compassionate support for their healing journey.`;
+        } else if (focusLower.includes('addiction')) {
+          parsedPersona.therapistFit = `You understand the complexity of addiction and can provide the structured yet compassionate approach they need for sustainable recovery.`;
+        } else if (focusLower.includes('anxiety')) {
+          parsedPersona.therapistFit = `You understand how anxiety can be overwhelming and provide practical tools combined with supportive therapy to help them regain control.`;
+        } else {
+          parsedPersona.therapistFit = `You understand the challenges of ${focusLower} and can provide both clinical expertise and genuine support for meaningful change.`;
+        }
       }
-      
-      // Fix basic grammar in therapist fit - MORE PATTERNS
-      parsedPersona.therapistFit = parsedPersona.therapistFit
-        .replace(/You needs/gi, 'You need')
-        .replace(/You seeks/gi, 'You seek')
-        .replace(/You values/gi, 'You value')
-        .replace(/You understand/gi, 'You understand');
     }
 
     console.log('✅ Nuclear grammar filter applied successfully');
