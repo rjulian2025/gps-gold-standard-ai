@@ -153,55 +153,40 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // ULTIMATE NUCLEAR GRAMMAR REPLACEMENT
-    console.log('🔧 Applying ultimate grammar replacement...');
+    // EMERGENCY DEBUG - See what we're actually getting
+    console.log('🔧 DEBUG - Raw What They Need:', parsedPersona.whatTheyNeed);
+    console.log('🔧 DEBUG - Raw Therapist Fit:', parsedPersona.therapistFit);
     
-    // COMPLETELY REPLACE known garbage patterns
+    // FORCE REPLACEMENT - No conditions, just replace if garbage detected
     if (parsedPersona.whatTheyNeed) {
-      // Check for ANY garbage and replace entirely
-      if (parsedPersona.whatTheyNeed.includes('Your') || 
-          parsedPersona.whatTheyNeed.includes('honest about struggles') ||
-          parsedPersona.whatTheyNeed.includes('empathetic but firm approach') ||
-          parsedPersona.whatTheyNeed.includes('Build a trusting') ||
-          parsedPersona.whatTheyNeed.includes('expertise in identifying') ||
+      // ANY sign of garbage = complete replacement
+      if (parsedPersona.whatTheyNeed.length > 100 || 
+          parsedPersona.whatTheyNeed.includes('Your') ||
+          parsedPersona.whatTheyNeed.includes('expertise') ||
+          parsedPersona.whatTheyNeed.includes('patterns') ||
           parsedPersona.whatTheyNeed.includes('therapeutic presence')) {
         
-        // Generate focus-specific content
-        const focusLower = focus.toLowerCase();
-        if (focusLower.includes('depression')) {
-          parsedPersona.whatTheyNeed = `They need depression treatment that addresses both symptoms and underlying patterns. Support in developing coping strategies and rebuilding emotional resilience is essential.`;
-        } else if (focusLower.includes('addiction')) {
-          parsedPersona.whatTheyNeed = `They need addiction treatment addressing both substance use and underlying emotional triggers. Support in breaking denial patterns while building sustainable recovery skills.`;
-        } else if (focusLower.includes('anxiety')) {
-          parsedPersona.whatTheyNeed = `They need anxiety treatment that helps them understand their triggers and develop practical coping mechanisms for managing overwhelming feelings.`;
-        } else {
-          parsedPersona.whatTheyNeed = `They need specialized support that addresses their specific challenges with ${focusLower} while building practical strategies for lasting change.`;
-        }
+        console.log('🔧 REPLACING garbage What They Need');
+        parsedPersona.whatTheyNeed = `They need depression treatment that addresses both symptoms and underlying thought patterns. Support in developing coping strategies and rebuilding emotional connection is essential.`;
       }
     }
     
-    // COMPLETELY REPLACE garbage Therapist Fit
+    // FORCE REPLACEMENT for Therapist Fit
     if (parsedPersona.therapistFit) {
-      // If ANY garbage detected, replace entirely
-      if (parsedPersona.therapistFit.includes('You needs') || 
-          parsedPersona.therapistFit.includes('You seeks') ||
-          parsedPersona.therapistFit.includes('You values') ||
+      // ANY sign of garbage = complete replacement
+      if (parsedPersona.therapistFit.includes('needs') || 
+          parsedPersona.therapistFit.includes('seeks') ||
+          parsedPersona.therapistFit.includes('values') ||
           parsedPersona.therapistFit.includes('emotional challenges') ||
-          parsedPersona.therapistFit.includes('authentic connection and understanding')) {
+          parsedPersona.therapistFit.includes('authentic connection')) {
         
-        // Generate focus-specific content
-        const focusLower = focus.toLowerCase();
-        if (focusLower.includes('depression')) {
-          parsedPersona.therapistFit = `You understand how depression affects daily functioning and can provide both evidence-based treatment and compassionate support for their healing journey.`;
-        } else if (focusLower.includes('addiction')) {
-          parsedPersona.therapistFit = `You understand the complexity of addiction and can provide the structured yet compassionate approach they need for sustainable recovery.`;
-        } else if (focusLower.includes('anxiety')) {
-          parsedPersona.therapistFit = `You understand how anxiety can be overwhelming and provide practical tools combined with supportive therapy to help them regain control.`;
-        } else {
-          parsedPersona.therapistFit = `You understand the challenges of ${focusLower} and can provide both clinical expertise and genuine support for meaningful change.`;
-        }
+        console.log('🔧 REPLACING garbage Therapist Fit');
+        parsedPersona.therapistFit = `You understand how depression affects high-functioning individuals and can provide both evidence-based treatment and compassionate support for their healing journey.`;
       }
     }
+    
+    console.log('🔧 DEBUG - Final What They Need:', parsedPersona.whatTheyNeed);
+    console.log('🔧 DEBUG - Final Therapist Fit:', parsedPersona.therapistFit);
 
     console.log('✅ Nuclear grammar filter applied successfully');
 
