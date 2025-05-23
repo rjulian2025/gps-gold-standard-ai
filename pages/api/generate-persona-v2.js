@@ -64,28 +64,34 @@ async function generatePersonaContentV2(therapistData) {
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  const personaPrompt = `Create a client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
+  const personaPrompt = `Write a client description for ${therapistName}.
 
-${isForParents ? 'Focus on PARENTS dealing with troubled teens.' : 'Focus on ADULTS seeking therapy.'}
+Focus: ${focus}
+Client Type: ${preferredClientType}
 
-STRUCTURE:
+FORMAT:
 
-**PERSONA TITLE:** [Create title]
+**PERSONA TITLE:** [Write 2-3 words only]
 
 **WHO THEY ARE**
-Behind their composed exterior lies someone who [continue naturally, 150-180 words]
+Behind their composed exterior lies someone who [write 150-180 words describing their psychological state, behaviors, and challenges. Use "they/them" pronouns throughout.]
 
 **WHAT THEY NEED** 
-[45-60 words about therapeutic support]
+They need [write 45-60 words about specific therapeutic support for their ${focus} challenges]
 
 **THERAPIST FIT**
-You understand [45-60 words about why you're the right therapist]
+You understand [write 45-60 words about why your ${focus} expertise helps this client specifically]
 
-RULES:
-- Start persona with "Behind their composed exterior lies someone who..."
-- Use complete sentences
-- NO hooks or marketing sections
-- STOP after Therapist Fit`;
+WRITING RULES:
+- Keep persona title SHORT (2-3 words maximum)
+- Start "Who They Are" with "Behind their composed exterior lies someone who..."
+- Use "they/them" pronouns only, never names or demographics
+- Focus on psychological insights, not surface details
+- Make "What They Need" and "Therapist Fit" specific to ${focus}
+- Use complete sentences with proper grammar
+- STOP after Therapist Fit section - write nothing else
+
+Write naturally and professionally.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
