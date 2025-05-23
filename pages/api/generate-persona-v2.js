@@ -214,30 +214,40 @@ export default async function handler(req, res) {
     const parsedPersona = parsePersonaContent(rawPersonaContent);
     console.log('✅ V2 content parsed successfully');
 
-    // Enhanced grammar cleanup for V2
+    // COMPREHENSIVE cleanup for all remaining issues
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
-        // Fix grammar fragments
+        // Fix the core grammar disaster pattern
+        .replace(/^.*is a person who behind their composed exterior lies someone who/gi, 'Behind their composed exterior lies someone who')
+        .replace(/^.*is a person who behind their/gi, 'Behind their')
+        .replace(/^.*is a person who/gi, '')
+        // Fix other grammar fragments
         .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
         .replace(/They arrive with,/gi, 'They arrive carrying')
         .replace(/In the quiet of your office,/gi, 'In the quiet of your office, they')
         // Remove demographic insertions
         .replace(/A \d+-year-old \w+ \w+/gi, 'They')
         .replace(/\d+-year-old/gi, '')
-        // Clean up any remaining fragments
+        // Clean up any title references that leaked in
+        .replace(/Analytical Stagnation Seeker/gi, 'They')
+        .replace(/Perfectionist Achiever/gi, 'They')
+        .replace(/Exhausted Navigator/gi, 'They')
         .trim();
     }
 
-    // Replace generic content with personalized content
+    // Fix broken "What They Need" content
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
-        parsedPersona.whatTheyNeed = `They need a therapist who can help them understand the patterns driving their ${focus.toLowerCase()} while providing practical tools for sustainable change.`;
+      if (parsedPersona.whatTheyNeed.includes('Your intellectually curious') || 
+          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
+        parsedPersona.whatTheyNeed = `They need a therapist who can help them move beyond intellectual understanding to genuine emotional experience. Support in developing practical tools for accessing and processing their emotions authentically is essential.`;
       }
     }
 
+    // Fix generic "Therapist Fit" content  
     if (parsedPersona.therapistFit) {
-      if (parsedPersona.therapistFit.includes('You needs guidance through emotional challenges')) {
-        parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and can provide both the clinical expertise and genuine empathy they need for lasting change.`;
+      if (parsedPersona.therapistFit.includes('You needs guidance through emotional challenges') ||
+          parsedPersona.therapistFit.includes('You seeks authentic connection')) {
+        parsedPersona.therapistFit = `You understand the frustration of clients who intellectualize their emotions as a defense mechanism. Your approach helps them bridge the gap between cognitive awareness and emotional experience, creating lasting change.`;
       }
     }
 
