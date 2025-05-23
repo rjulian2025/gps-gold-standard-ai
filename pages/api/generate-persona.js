@@ -71,38 +71,45 @@ async function generatePersonaContent(therapistData) {
 
 ${isForParents ? 'Focus on PARENTS dealing with troubled teens.' : 'Focus on ADULTS seeking therapy.'}
 
-RULES:
-- Start with "Sitting across from you," or "Behind their composed exterior," or "They arrive with"
-- NEVER write "[Title] is a person who..."
-- Use "they/them" pronouns
+CRITICAL WRITING RULES:
+- Start the persona description with: "Sitting across from you," or "Behind their composed exterior," or "They arrive with"
+- ABSOLUTELY FORBIDDEN: Do not write "[Title] is a person who" - this is wrong
+- ABSOLUTELY FORBIDDEN: Do not write "who sitting" - this is grammatically incorrect
+- Use complete sentences with proper grammar
+- Use "they/them" pronouns only
 - Write 150-180 words for persona section
-- NO "How to Use" section
 
 STRUCTURE:
 
-**PERSONA TITLE:** [Title]
+**PERSONA TITLE:** [Create a compelling title]
 
 **PERSONA:** 
-[Start naturally, 150-180 words]
+Sitting across from you, [continue with natural description using they/them pronouns. Write 150-180 words about their experience and challenges.]
 
 **WHAT THEY NEED:** 
-[45-55 words]
+[45-55 words about therapeutic support needed]
 
 **THERAPIST FIT:** 
-[45-55 words using "You" to address therapist]
+You offer [45-55 words about why you're the right therapist, addressing the therapist as "You"]
 
 **MARKETING HOOKS:**
 
-**[Headline]**
-[Subline]
+**[Compelling headline]**
+[Supporting text]
 
-**[Headline]** 
-[Subline]
+**[Second headline]** 
+[Supporting text]
 
-**[Headline]**
-[Subline]
+**[Third headline]**
+[Supporting text]
 
-STOP after hooks.`;
+EXAMPLE OF CORRECT OPENING:
+"Sitting across from you, they clutch a folder of documents..."
+
+EXAMPLE OF WRONG OPENING (DO NOT USE):
+"Desperate Navigator is a person who sitting across from you..."
+
+Write naturally and professionally. STOP after the third marketing hook.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -208,12 +215,17 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContent(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // Basic grammar fixes
+    // COMPREHENSIVE grammar fixes
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
         .replace(/\w+ is a person who sitting/gi, 'Sitting')
         .replace(/\w+ is a person who/gi, 'They are someone who')
-        .replace(/who sitting/gi, 'who is sitting');
+        .replace(/who sitting/gi, 'who is sitting')
+        .replace(/Desperate Navigator is a person who/gi, '')
+        .replace(/Functional Struggler is a person who/gi, '')
+        .replace(/Exhausted Guardian is a person who/gi, '')
+        .replace(/High-Achieving Burnout Survivor is a person who/gi, '')
+        .replace(/Family Peacemaker is a person who/gi, '');
     }
     
     if (parsedPersona.therapistFit) {
