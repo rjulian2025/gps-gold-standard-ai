@@ -56,7 +56,7 @@ Focus on:
 - Why they're suited for ${preferredClientType}
 - Their therapeutic approach
 
-Write professionally, addressing the therapist as "You."`;
+Write professionally, addressing the therapist as "You." Start directly with "You bring" or "You excel" - do not include any title or header.`;
 
   return await callAnthropicAPI(heresYouPrompt);
 }
@@ -87,10 +87,10 @@ FOLLOW THIS EXACT STRUCTURE:
 [Second paragraph: 70-100 words about deeper patterns and inner experience]
 
 **WHAT THEY NEED** 
-[Write 45-60 words about specific therapeutic support they require. Focus on their unique situation, not generic therapy language.]
+[Write 45-60 words about what this specific client needs from therapy, focusing on ${focus} and working with ${preferredClientType}. Be specific to their situation.]
 
 **THERAPIST FIT**
-[Write 45-60 words starting with "You understand" or "You recognize" explaining specifically why this therapist matches this client's needs. Make it personal to their situation.]
+[Write 45-60 words starting with "You understand" explaining specifically why therapist ${therapistName} with expertise in ${focus} is perfect for this client. Focus on the therapist's specific strengths.]
 
 **KEY HOOKS**
 * *"[First person quote showing their inner experience]"*
@@ -172,7 +172,7 @@ function parsePersonaContent(rawContent) {
 }
 
 export default async function handler(req, res) {
-  console.log('🚨 V2 TEMPLATE VERSION - TIMESTAMP:', new Date().toISOString());
+  console.log('🚨 V2 FIXED VERSION - TIMESTAMP:', new Date().toISOString());
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -189,7 +189,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 Processing V2 request...');
+    console.log('🚀 Processing V2 FIXED request...');
     
     const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
 
@@ -202,7 +202,7 @@ export default async function handler(req, res) {
     const therapistData = { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits };
     const isForParents = isMinorSpecialist(preferredClientType, focus);
 
-    console.log('🎯 Generating V2 for:', therapistName);
+    console.log('🎯 Generating FIXED V2 for:', therapistName);
 
     // Generate HERE'S YOU
     const heresYouContent = await generateHeresYou(therapistData);
@@ -228,16 +228,28 @@ export default async function handler(req, res) {
         .trim();
     }
 
-    // Replace generic content with personalized content
+    // FIX 3: Replace generic "What They Need" content
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
-        parsedPersona.whatTheyNeed = `They need a therapist who can help them understand the patterns driving their ${focus.toLowerCase()} while providing practical tools for sustainable change.`;
+      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') || 
+          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
+        if (isForParents) {
+          parsedPersona.whatTheyNeed = `They need guidance in understanding their child's behavior patterns while developing effective parenting strategies that reduce household conflict and strengthen family bonds.`;
+        } else {
+          parsedPersona.whatTheyNeed = `They need a therapist who can help them understand the patterns driving their ${focus.toLowerCase()} while providing practical tools for sustainable change.`;
+        }
       }
     }
 
+    // FIX 2: Replace broken "Therapist Fit" content  
     if (parsedPersona.therapistFit) {
-      if (parsedPersona.therapistFit.includes('You needs guidance through emotional challenges')) {
-        parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and can provide both the clinical expertise and genuine empathy they need for lasting change.`;
+      if (parsedPersona.therapistFit.includes('You what started as') || 
+          parsedPersona.therapistFit.includes('You needs guidance') ||
+          parsedPersona.therapistFit.length < 20) {
+        if (isForParents) {
+          parsedPersona.therapistFit = `You understand how family dynamics affect everyone involved and specialize in helping parents develop both the insight and practical skills needed to support their struggling teen while maintaining their own well-being.`;
+        } else {
+          parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and can provide both the clinical expertise and genuine empathy they need for lasting change.`;
+        }
       }
     }
 
@@ -250,7 +262,7 @@ export default async function handler(req, res) {
       hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
     };
 
-    console.log('✅ V2 Success - sending response');
+    console.log('✅ V2 FIXED Success - sending response');
 
     return res.status(200).json({
       success: true,
@@ -259,12 +271,12 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        version: 'TEMPLATE_V2'
+        version: 'FIXED_TEMPLATE_V2'
       }
     });
 
   } catch (error) {
-    console.error('❌ V2 Error:', error);
+    console.error('❌ V2 FIXED Error:', error);
     
     return res.status(500).json({
       success: false,
