@@ -1,4 +1,4 @@
-// V2 MINIMAL WORKING VERSION - No complex fixes, just working
+// V2 MINIMAL WORKING VERSION - Rollback to stable state
 
 async function callAnthropicAPI(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -64,20 +64,28 @@ async function generatePersonaContentV2(therapistData) {
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  // NUCLEAR SIMPLIFIED PROMPT - No problematic sections
-  const personaPrompt = `Write about a client seeking therapy for ${focus}.
+  const personaPrompt = `Create a client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
 
-Write exactly this format:
+${isForParents ? 'Focus on PARENTS dealing with troubled teens.' : 'Focus on ADULTS seeking therapy.'}
 
-**PERSONA TITLE:** [2-3 words describing this client]
+STRUCTURE:
+
+**PERSONA TITLE:** [Create title]
 
 **WHO THEY ARE**
-Behind their composed exterior lies someone who [write 150 words about their inner experience with ${focus}. Use they/them pronouns.]
+Behind their composed exterior lies someone who [continue naturally, 150-180 words]
 
 **WHAT THEY NEED** 
-They need specific help with ${focus} including [write 50 words about their therapeutic needs]
+[45-60 words about therapeutic support]
 
-Keep it simple and professional. Write only these sections - no therapist fit or hooks.`;
+**THERAPIST FIT**
+You understand [45-60 words about why you're the right therapist]
+
+RULES:
+- Start persona with "Behind their composed exterior lies someone who..."
+- Use complete sentences
+- NO hooks or marketing sections
+- STOP after Therapist Fit`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -119,7 +127,7 @@ function parsePersonaContent(rawContent) {
 }
 
 export default async function handler(req, res) {
-  console.log('🚨 V2 MINIMAL VERSION WITH DEBUG - UPDATED:', new Date().toISOString());
+  console.log('🚨 V2 ROLLBACK VERSION:', new Date().toISOString());
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -150,71 +158,21 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // EMERGENCY DEBUG - See what we're actually getting
-    console.log('🔧 DEBUG - Raw What They Need:', parsedPersona.whatTheyNeed);
-    console.log('🔧 DEBUG - Raw Therapist Fit:', parsedPersona.therapistFit);
-    
-    // FORCE REPLACEMENT - No conditions, just replace if garbage detected
-    if (parsedPersona.whatTheyNeed) {
-      // ANY sign of garbage = complete replacement
-      if (parsedPersona.whatTheyNeed.length > 100 || 
-          parsedPersona.whatTheyNeed.includes('Your') ||
-          parsedPersona.whatTheyNeed.includes('expertise') ||
-          parsedPersona.whatTheyNeed.includes('patterns') ||
-          parsedPersona.whatTheyNeed.includes('therapeutic presence')) {
-        
-        console.log('🔧 REPLACING garbage What They Need');
-        parsedPersona.whatTheyNeed = `They need depression treatment that addresses both symptoms and underlying thought patterns. Support in developing coping strategies and rebuilding emotional connection is essential.`;
-      }
-    }
-    
-    // FORCE REPLACEMENT for Therapist Fit
-    if (parsedPersona.therapistFit) {
-      // ANY sign of garbage = complete replacement
-      if (parsedPersona.therapistFit.includes('needs') || 
-          parsedPersona.therapistFit.includes('seeks') ||
-          parsedPersona.therapistFit.includes('values') ||
-          parsedPersona.therapistFit.includes('emotional challenges') ||
-          parsedPersona.therapistFit.includes('authentic connection')) {
-        
-        console.log('🔧 REPLACING garbage Therapist Fit');
-        parsedPersona.therapistFit = `You understand how depression affects high-functioning individuals and can provide both evidence-based treatment and compassionate support for their healing journey.`;
-      }
-    }
-    
-    console.log('🔧 DEBUG - Final What They Need:', parsedPersona.whatTheyNeed);
-    console.log('🔧 DEBUG - Final Therapist Fit:', parsedPersona.therapistFit);
-
-    console.log('✅ Nuclear grammar filter applied successfully');
-
     const finalResult = {
       title: parsedPersona.title || 'Client Profile',
       heresYou: heresYouContent.trim(),
       persona: parsedPersona.persona || '',
       whatTheyNeed: parsedPersona.whatTheyNeed || '',
-      therapistFit: '', // ELIMINATED - No more garbage
+      therapistFit: parsedPersona.therapistFit || '',
       hooks: []
     };
-
-    // NUCLEAR CONTENT REPLACEMENT - Override everything
-    console.log('🔧 NUCLEAR - Forcing clean content override');
-    
-    // FORCE clean content regardless of what was generated
-    finalResult.whatTheyNeed = `They need specialized ${focus.toLowerCase()} treatment that addresses both symptoms and underlying patterns. Support in developing practical coping strategies and rebuilding emotional resilience is essential.`;
-    
-    // ELIMINATED SECTION - No therapist fit to avoid garbage
-    finalResult.therapistFit = '';
-
-    console.log('🔧 NUCLEAR - Final whatTheyNeed:', finalResult.whatTheyNeed);
-    console.log('🔧 NUCLEAR - Therapist Fit ELIMINATED');
-    console.log('🎉 V2 with NUCLEAR elimination complete');
 
     return res.status(200).json({
       success: true,
       persona: finalResult,
       metadata: {
         generatedAt: new Date().toISOString(),
-        version: 'V2_MINIMAL'
+        version: 'V2_ROLLBACK'
       }
     });
 
