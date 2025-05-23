@@ -73,43 +73,43 @@ ${isForParents ? 'The client is a PARENT dealing with struggling teens/children.
 
 FOLLOW THIS EXACT STRUCTURE:
 
-**PERSONA TITLE:** [Create a compelling title - no "The" prefix needed]
+**PERSONA TITLE:** [Create a compelling 2-4 word title - no "The" prefix]
 
 **WHO THEY ARE**
-[Start with one of these natural openings, then continue for 150-180 words in 2 paragraphs:
-- "In the quiet of your office, they..."
-- "Behind their composed exterior..."  
-- "They arrive carrying..."
-- "Their hesitant voice reveals..."
-- "Sitting across from you, they..."]
+[Write 150-180 words in 2 paragraphs. Start with one of these COMPLETE sentences:
+- "Behind their composed exterior lies someone who..."
+- "They arrive carrying the weight of..."  
+- "In the quiet of your office, they reveal..."
+- "Their hesitant voice tells a story of..."]
 
-[First paragraph: 60-80 words about their surface presentation and immediate concerns]
+[First paragraph: 60-80 words about their surface presentation and immediate struggles]
 
-[Second paragraph: 70-100 words about deeper psychological patterns and inner experience]
+[Second paragraph: 70-100 words about deeper patterns and inner experience]
 
 **WHAT THEY NEED** 
-[45-60 words about therapeutic support needed, using professional language]
+[Write 45-60 words about specific therapeutic support they require. Focus on their unique situation, not generic therapy language.]
 
 **THERAPIST FIT**
-[45-60 words starting with "You understand..." explaining why you're the right therapist]
+[Write 45-60 words starting with "You understand" or "You recognize" explaining specifically why this therapist matches this client's needs. Make it personal to their situation.]
 
 **KEY HOOKS**
 * *"[First person quote showing their inner experience]"*
-* *"[Second quote about their struggle]"*  
-* *"[Third quote about their hopes/fears]"*
+* *"[Second quote about their specific struggle]"*  
+* *"[Third quote about their fears or hopes]"*
 
 CONTENT GUIDANCE:
 - Client traits that energize the therapist: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 - Client traits that can be challenging: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
 
 CRITICAL RULES:
-- Use complete sentences with proper grammar
-- Include specific psychological insights and behavioral details
-- Create emotional resonance through concrete examples
+- Use COMPLETE sentences with proper grammar throughout
+- DO NOT include specific age, job titles, or demographics unless directly relevant
+- Include specific psychological insights and behavioral observations
+- Create emotional resonance through concrete but universal examples
 - STOP immediately after the third key hook
-- NEVER add "How to Use" sections or usage instructions
+- NEVER add "How to Use" sections, instructions, or marketing advice
 
-Write professionally with empathy and psychological depth.`;
+Write with professional empathy and psychological depth.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -214,12 +214,31 @@ export default async function handler(req, res) {
     const parsedPersona = parsePersonaContent(rawPersonaContent);
     console.log('✅ V2 content parsed successfully');
 
-    // Light grammar cleanup
+    // Enhanced grammar cleanup for V2
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
-        .replace(/They arrive with,/gi, 'They arrive with a heavy expression,')
+        // Fix grammar fragments
+        .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
+        .replace(/They arrive with,/gi, 'They arrive carrying')
         .replace(/In the quiet of your office,/gi, 'In the quiet of your office, they')
-        .replace(/Behind their composed exterior,/gi, 'Behind their composed exterior, there lies');
+        // Remove demographic insertions
+        .replace(/A \d+-year-old \w+ \w+/gi, 'They')
+        .replace(/\d+-year-old/gi, '')
+        // Clean up any remaining fragments
+        .trim();
+    }
+
+    // Replace generic content with personalized content
+    if (parsedPersona.whatTheyNeed) {
+      if (parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
+        parsedPersona.whatTheyNeed = `They need a therapist who can help them understand the patterns driving their ${focus.toLowerCase()} while providing practical tools for sustainable change.`;
+      }
+    }
+
+    if (parsedPersona.therapistFit) {
+      if (parsedPersona.therapistFit.includes('You needs guidance through emotional challenges')) {
+        parsedPersona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and can provide both the clinical expertise and genuine empathy they need for lasting change.`;
+      }
     }
 
     const finalResult = {
