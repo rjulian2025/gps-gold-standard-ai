@@ -210,53 +210,27 @@ export default async function handler(req, res) {
     const parsedPersona = parsePersonaContent(rawPersonaContent);
     console.log('✅ V2 content parsed successfully');
 
-    // EMERGENCY COMPREHENSIVE CLEANUP - Fix all parsing issues
+    // SIMPLE, SAFE cleanup - minimal changes
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
-        // Fix the core grammar disaster pattern
-        .replace(/^.*is a person who behind their composed exterior lies someone who/gi, 'Behind their composed exterior lies someone who')
-        .replace(/^.*is a person who behind their/gi, 'Behind their')
+        // Fix only the critical issues
         .replace(/^.*is a person who/gi, '')
-        // Fix mysterious "You " replacements
         .replace(/You their/gi, 'Their')
         .replace(/You each/gi, 'Each')  
         .replace(/You the/gi, 'The')
-        .replace(/You behind/gi, 'Behind')
-        .replace(/You despite/gi, 'Despite')
-        // Fix other grammar fragments
-        .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
-        .replace(/They arrive with,/gi, 'They arrive carrying')
-        .replace(/In the quiet of your office,/gi, 'In the quiet of your office, they')
-        // Remove demographic insertions
-        .replace(/A \d+-year-old \w+ \w+/gi, 'They')
-        .replace(/\d+-year-old/gi, '')
-        // Clean up any title references that leaked in
-        .replace(/Analytical Stagnation Seeker/gi, 'They')
-        .replace(/Perfectionist Achiever/gi, 'They')
-        .replace(/Exhausted Navigator/gi, 'They')
-        .replace(/Concerned Parent is a person who/gi, '')
         .trim();
     }
 
-    // Fix broken "What They Need" content
-    if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') || 
-          parsedPersona.whatTheyNeed.includes('Your intellectually curious') || 
-          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
-        parsedPersona.whatTheyNeed = `They need a therapist who understands the unique challenges of parenting struggling children. Support in developing self-compassion while maintaining effective boundaries is essential for their family's healing.`;
-      }
+    // Fix only if broken content is detected
+    if (parsedPersona.whatTheyNeed && parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach')) {
+      parsedPersona.whatTheyNeed = `They need specialized support for their unique challenges and practical strategies for sustainable change.`;
     }
 
-    // Fix completely broken "Therapist Fit" content  
-    if (parsedPersona.therapistFit) {
-      if (parsedPersona.therapistFit.includes('You their eyes reveal') ||
-          parsedPersona.therapistFit.includes('You needs guidance through emotional challenges') ||
-          parsedPersona.therapistFit.includes('You seeks authentic connection')) {
-        parsedPersona.therapistFit = `You understand the complex emotions parents experience when their child is struggling. Your approach provides both practical parenting strategies and emotional support for the parent's own healing journey.`;
-      }
+    if (parsedPersona.therapistFit && parsedPersona.therapistFit.includes('You their eyes reveal')) {
+      parsedPersona.therapistFit = `You understand their specific struggles and can provide both expertise and authentic connection.`;
     }
 
-    // Fix "Here's You" section formatting
+    // Fix Here's You formatting
     if (finalResult.heresYou) {
       finalResult.heresYou = finalResult.heresYou
         .replace(/# Here's You You/gi, 'You')
