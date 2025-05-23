@@ -122,7 +122,7 @@ function parsePersonaContent(rawContent) {
 }
 
 export default async function handler(req, res) {
-  console.log('🚨 V2 MINIMAL VERSION:', new Date().toISOString());
+  console.log('🚨 V2 MINIMAL VERSION WITH DEBUG - UPDATED:', new Date().toISOString());
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -199,6 +199,14 @@ export default async function handler(req, res) {
       hooks: []
     };
 
+    // NUCLEAR CONTENT REPLACEMENT - Override everything
+    console.log('🔧 NUCLEAR - Forcing clean content override');
+    
+    // FORCE clean content regardless of what was generated
+    finalResult.whatTheyNeed = `They need specialized ${focus.toLowerCase()} treatment that addresses both symptoms and underlying patterns. Support in developing practical coping strategies and rebuilding emotional resilience is essential.`;
+    
+    finalResult.therapistFit = `You understand how ${focus.toLowerCase()} affects individuals and can provide both evidence-based treatment and compassionate support for their healing journey.`;
+
     // FINAL CLEANUP PASS - Double protection
     if (finalResult.heresYou) {
       finalResult.heresYou = finalResult.heresYou
@@ -208,7 +216,9 @@ export default async function handler(req, res) {
         .trim();
     }
 
-    console.log('🎉 V2 with grammar filter complete');
+    console.log('🔧 NUCLEAR - Final whatTheyNeed:', finalResult.whatTheyNeed);
+    console.log('🔧 NUCLEAR - Final therapistFit:', finalResult.therapistFit);
+    console.log('🎉 V2 with NUCLEAR override complete');
 
     return res.status(200).json({
       success: true,
