@@ -158,6 +158,65 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
+    // POST-PROCESSING GRAMMAR FILTER
+    console.log('🔧 Applying grammar filter...');
+    
+    // Filter persona content
+    if (parsedPersona.persona) {
+      const originalPersona = parsedPersona.persona.substring(0, 100);
+      
+      parsedPersona.persona = parsedPersona.persona
+        // Fix title contamination patterns
+        .replace(/^.*is a person who/gi, '')
+        .replace(/\w+ is a person who sitting/gi, 'Sitting')
+        .replace(/\w+ is a person who behind/gi, 'Behind')
+        // Fix mysterious "You" replacements
+        .replace(/You their/gi, 'Their')
+        .replace(/You each/gi, 'Each')
+        .replace(/You the/gi, 'The')
+        .replace(/You behind/gi, 'Behind')
+        .replace(/You despite/gi, 'Despite')
+        // Fix grammar fragments
+        .replace(/who sitting/gi, 'who is sitting')
+        .replace(/who they/gi, 'who')
+        .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
+        // Clean up incomplete sentences
+        .replace(/They arrive with,/gi, 'They arrive with visible signs of stress,')
+        .replace(/In the quiet of your office,/gi, 'In the quiet of your office, they')
+        // Remove demographics if they sneak in
+        .replace(/A \d+-year-old \w+/gi, 'They')
+        .replace(/\d+-year-old/gi, '')
+        .trim();
+      
+      console.log('🔧 Original:', originalPersona);
+      console.log('🔧 Filtered:', parsedPersona.persona.substring(0, 100));
+    }
+    
+    // Filter "What They Need" content
+    if (parsedPersona.whatTheyNeed) {
+      if (parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship') ||
+          parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach')) {
+        parsedPersona.whatTheyNeed = `They need specialized support that understands their unique challenges and provides practical strategies for sustainable change.`;
+      }
+    }
+    
+    // Filter "Therapist Fit" content
+    if (parsedPersona.therapistFit) {
+      if (parsedPersona.therapistFit.includes('You needs guidance') ||
+          parsedPersona.therapistFit.includes('You seeks authentic connection') ||
+          parsedPersona.therapistFit.includes('You their eyes')) {
+        parsedPersona.therapistFit = `You understand their specific struggles and can provide both clinical expertise and authentic connection for meaningful change.`;
+      }
+      
+      // Fix basic grammar in therapist fit
+      parsedPersona.therapistFit = parsedPersona.therapistFit
+        .replace(/You needs/gi, 'You need')
+        .replace(/You seeks/gi, 'You seek')
+        .replace(/You values/gi, 'You value');
+    }
+
+    console.log('✅ Grammar filter applied successfully');
+
     const finalResult = {
       title: parsedPersona.title || 'Client Profile',
       heresYou: heresYouContent.trim(),
@@ -166,6 +225,17 @@ export default async function handler(req, res) {
       therapistFit: parsedPersona.therapistFit || '',
       hooks: []
     };
+
+    // FINAL CLEANUP PASS - Double protection
+    if (finalResult.heresYou) {
+      finalResult.heresYou = finalResult.heresYou
+        .replace(/# Here's You You/gi, 'You')
+        .replace(/^# Here's You\s*/gi, '')
+        .replace(/You You /gi, 'You ')
+        .trim();
+    }
+
+    console.log('🎉 V2 with grammar filter complete');
 
     return res.status(200).json({
       success: true,
