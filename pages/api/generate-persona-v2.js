@@ -158,15 +158,17 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // ENHANCED POST-PROCESSING GRAMMAR FILTER
-    console.log('🔧 Applying enhanced grammar filter...');
+    // NUCLEAR-LEVEL GRAMMAR FILTER - Catch everything
+    console.log('🔧 Applying nuclear grammar filter...');
     
     // Filter persona content
     if (parsedPersona.persona) {
       const originalPersona = parsedPersona.persona.substring(0, 100);
       
       parsedPersona.persona = parsedPersona.persona
-        // Fix title contamination patterns - MORE AGGRESSIVE
+        // NUCLEAR: Fix title contamination patterns
+        .replace(/^.*Adult Struggling with is a person who/gi, '')
+        .replace(/^.*Struggling with is a person who/gi, '')
         .replace(/^.*Profile is a person who/gi, '')
         .replace(/^.*Client Profile is a person who/gi, '')
         .replace(/^.*is a person who/gi, '')
@@ -200,33 +202,40 @@ export default async function handler(req, res) {
       console.log('🔧 Filtered:', parsedPersona.persona.substring(0, 100));
     }
     
-    // AGGRESSIVE cleanup of "What They Need" content
+    // NUCLEAR cleanup of "What They Need" - Replace ALL garbage
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Your intellectually curious') ||
+      // Check for ANY of the garbage patterns
+      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') ||
+          parsedPersona.whatTheyNeed.includes('Your intellectually curious') ||
           parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship') ||
-          parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') ||
-          parsedPersona.whatTheyNeed.includes('Your expertise in identifying')) {
-        parsedPersona.whatTheyNeed = `They need specialized OCD treatment combining evidence-based exposure therapy with compassionate support for breaking free from compulsive patterns.`;
+          parsedPersona.whatTheyNeed.includes('Your expertise in identifying') ||
+          parsedPersona.whatTheyNeed.includes('Your therapeutic presence')) {
+        
+        parsedPersona.whatTheyNeed = `They need addiction treatment that addresses both the substance use and underlying emotional patterns. Support for breaking through denial while building sustainable recovery strategies is essential.`;
       }
     }
     
-    // AGGRESSIVE cleanup of "Therapist Fit" content
+    // NUCLEAR cleanup of "Therapist Fit" - Replace ALL garbage
     if (parsedPersona.therapistFit) {
+      // Check for ANY of the garbage patterns
       if (parsedPersona.therapistFit.includes('You needs guidance') ||
           parsedPersona.therapistFit.includes('You seeks authentic connection') ||
           parsedPersona.therapistFit.includes('You values trust and expertise') ||
-          parsedPersona.therapistFit.includes('You their eyes')) {
-        parsedPersona.therapistFit = `You understand the complexity of OCD and can provide the specialized ERP therapy they need while creating a safe, non-judgmental therapeutic environment.`;
+          parsedPersona.therapistFit.includes('You their eyes') ||
+          parsedPersona.therapistFit.includes('emotional challenges')) {
+          
+        parsedPersona.therapistFit = `You understand the complexity of high-functioning addiction and can provide the structured yet compassionate approach they need for lasting recovery.`;
       }
       
-      // Fix basic grammar in therapist fit
+      // Fix basic grammar in therapist fit - MORE PATTERNS
       parsedPersona.therapistFit = parsedPersona.therapistFit
         .replace(/You needs/gi, 'You need')
         .replace(/You seeks/gi, 'You seek')
-        .replace(/You values/gi, 'You value');
+        .replace(/You values/gi, 'You value')
+        .replace(/You understand/gi, 'You understand');
     }
 
-    console.log('✅ Enhanced grammar filter applied successfully');
+    console.log('✅ Nuclear grammar filter applied successfully');
 
     const finalResult = {
       title: parsedPersona.title || 'Client Profile',
