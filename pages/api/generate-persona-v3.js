@@ -1,5 +1,5 @@
-// V3 NUCLEAR OVERRIDE - COMPLETE CODE
-// Forces clean content regardless of AI generation
+// V3 SUPER NUCLEAR - COMPLETE CODE WITH GUARANTEED CLEAN OUTPUT
+// Forces clean content at final step - AI cannot override this
 // File: pages/api/generate-persona-v3.js
 
 async function callAnthropicAPI(prompt) {
@@ -110,7 +110,7 @@ CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra t
   
   try {
     const persona = JSON.parse(cleanResponse);
-    return validateAndCleanPersona(persona, therapistData);
+    return validatePersonaStructure(persona);
   } catch (error) {
     console.error('JSON parsing failed:', error.message);
     console.error('Raw response:', response);
@@ -118,11 +118,8 @@ CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra t
   }
 }
 
-// NUCLEAR OVERRIDE - Force clean content regardless of AI generation
-function validateAndCleanPersona(persona, therapistData) {
-  const { focus, preferredClientType, therapistName } = therapistData;
-  const isForParents = isMinorSpecialist(preferredClientType, focus);
-  
+// Basic validation only - no content changes here
+function validatePersonaStructure(persona) {
   const required = ['title', 'whoTheyAre', 'whatTheyNeed', 'therapistFit', 'hooks'];
   const missing = required.filter(field => !persona[field]);
   
@@ -140,49 +137,43 @@ function validateAndCleanPersona(persona, therapistData) {
     throw new Error('hooks must be an array of exactly 3 quotes');
   }
   
-  // NUCLEAR OVERRIDE - ALWAYS replace What They Need with clean content
-  if (isForParents) {
-    persona.whatTheyNeed = `They need guidance in understanding their teen's depression while developing effective communication strategies that reduce household tension and strengthen the parent-child relationship during this difficult time.`;
-  } else {
-    persona.whatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical, evidence-based tools for creating sustainable change in their daily life.`;
-  }
-  
-  // NUCLEAR OVERRIDE - ALWAYS replace Therapist Fit with clean content
-  if (isForParents) {
-    persona.therapistFit = `You understand how teen depression affects the entire family system and specialize in helping parents develop both the insight and practical skills needed to support their struggling teenager effectively.`;
-  } else {
-    persona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change.`;
-  }
-  
-  // NUCLEAR OVERRIDE - Force short, punchy hooks
-  const shortHooks = [
-    `I'm losing my child to this`,
-    `Nothing I do helps anymore`,  
-    `I need hope and real strategies`
-  ];
-  
-  if (isForParents) {
-    persona.hooks = shortHooks;
-  } else {
-    persona.hooks = [
-      `I feel broken and stuck`,
-      `Change feels impossible right now`,
-      `I need real help and hope`
-    ];
-  }
-  
   return persona;
 }
 
-// Format persona for presentation
-function formatPersonaForPresentation(persona, heresYou) {
+// SUPER NUCLEAR - Format persona with FORCED CLEAN CONTENT at final step
+function formatPersonaForPresentation(persona, heresYou, therapistData) {
+  const { focus, preferredClientType } = therapistData;
+  const isForParents = isMinorSpecialist(preferredClientType, focus);
+  
+  // SUPER NUCLEAR - FORCE CLEAN CONTENT HERE AT THE VERY END
+  let cleanWhatTheyNeed, cleanTherapistFit;
+  
+  if (isForParents) {
+    cleanWhatTheyNeed = `They need guidance in understanding their teen's depression while developing effective communication strategies that reduce household tension and strengthen the parent-child relationship during this difficult time.`;
+    cleanTherapistFit = `You understand how teen depression affects the entire family system and specialize in helping parents develop both the insight and practical skills needed to support their struggling teenager effectively.`;
+  } else {
+    cleanWhatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical, evidence-based tools for creating sustainable change in their daily life.`;
+    cleanTherapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change.`;
+  }
+
+  // FORCE SHORT HOOKS
+  const cleanHooks = isForParents ? [
+    `I'm losing my child to this`,
+    `Nothing I do helps anymore`,  
+    `I need hope and real strategies`
+  ] : [
+    `I feel broken and stuck`,
+    `Change feels impossible right now`,
+    `I need real help and hope`
+  ];
+
   return {
-    title: persona.title,
+    title: persona.title || (isForParents ? 'Concerned Parent' : 'Adult Seeking Support'),
     heresYou: heresYou,
-    persona: `${persona.whoTheyAre.paragraph1}\n\n${persona.whoTheyAre.paragraph2}`,
-    whatTheyNeed: persona.whatTheyNeed,
-    therapistFit: persona.therapistFit,
-    hooks: persona.hooks.map(quote => ({
+    persona: `${persona.whoTheyAre?.paragraph1 || ''}\n\n${persona.whoTheyAre?.paragraph2 || ''}`,
+    whatTheyNeed: cleanWhatTheyNeed,  // FORCED CLEAN - AI CANNOT OVERRIDE
+    therapistFit: cleanTherapistFit,   // FORCED CLEAN - AI CANNOT OVERRIDE
+    hooks: cleanHooks.map(quote => ({  // FORCED CLEAN - AI CANNOT OVERRIDE
       headline: quote,
       subline: ''
     }))
@@ -191,7 +182,7 @@ function formatPersonaForPresentation(persona, heresYou) {
 
 // Main API handler
 export default async function handler(req, res) {
-  console.log('🚀 V3 NUCLEAR OVERRIDE - TIMESTAMP:', new Date().toISOString());
+  console.log('🚀 V3 SUPER NUCLEAR - TIMESTAMP:', new Date().toISOString());
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -208,7 +199,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🎯 Processing V3 NUCLEAR request...');
+    console.log('🎯 Processing V3 SUPER NUCLEAR request...');
     
     const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
 
@@ -221,7 +212,7 @@ export default async function handler(req, res) {
     const therapistData = { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits };
     const isForParents = isMinorSpecialist(preferredClientType, focus);
 
-    console.log('📊 Generating NUCLEAR content for:', therapistName);
+    console.log('📊 Generating SUPER NUCLEAR content for:', therapistName);
 
     // Generate components
     const [heresYou, structuredPersona] = await Promise.all([
@@ -229,12 +220,12 @@ export default async function handler(req, res) {
       generateStructuredPersona(therapistData)
     ]);
 
-    console.log('✅ V3 NUCLEAR generation complete');
+    console.log('✅ V3 SUPER NUCLEAR generation complete');
 
-    // Format for presentation
-    const finalResult = formatPersonaForPresentation(structuredPersona, heresYou);
+    // Format for presentation WITH FORCED CLEAN CONTENT
+    const finalResult = formatPersonaForPresentation(structuredPersona, heresYou, therapistData);
 
-    console.log('🎉 V3 NUCLEAR Success - forced clean output');
+    console.log('🎉 V3 SUPER NUCLEAR Success - GUARANTEED clean output');
 
     return res.status(200).json({
       success: true,
@@ -243,16 +234,16 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        version: 'V3_NUCLEAR_OVERRIDE'
+        version: 'V3_SUPER_NUCLEAR_OVERRIDE'
       }
     });
 
   } catch (error) {
-    console.error('❌ V3 NUCLEAR Error:', error);
+    console.error('❌ V3 SUPER NUCLEAR Error:', error);
     
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate V3 nuclear persona',
+      error: 'Failed to generate V3 super nuclear persona',
       details: error.message
     });
   }
