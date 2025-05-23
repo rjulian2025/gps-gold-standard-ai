@@ -1,8 +1,67 @@
-// BACKEND: Add this new API endpoint file - /pages/api/generate-persona-v2.js
+// COMPLETE V2 API - Self-contained, no imports needed
 
-import { callAnthropicAPI, isMinorSpecialist, generateHeresYou, parsePersonaContent } from './generate-persona';
+async function callAnthropicAPI(prompt) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is required');
+  }
 
-// Generate persona content with TEMPLATE approach (improved version)
+  const requestBody = {
+    model: 'claude-3-7-sonnet-20250219',
+    max_tokens: 1500,
+    temperature: 0.15,
+    messages: [{ role: 'user', content: prompt }]
+  };
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Anthropic API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// Check if therapist works with minors (teens/kids)
+function isMinorSpecialist(preferredClientType, focus) {
+  const minorKeywords = ['teen', 'teenager', 'adolescent', 'child', 'children', 'kid', 'youth', 'minor', 'student'];
+  const clientType = (preferredClientType || '').toLowerCase();
+  const focusArea = (focus || '').toLowerCase();
+  
+  return minorKeywords.some(keyword => 
+    clientType.includes(keyword) || focusArea.includes(keyword)
+  );
+}
+
+// Generate HERE'S YOU content
+async function generateHeresYou(therapistData) {
+  const { therapistName, focus, preferredClientType } = therapistData;
+  
+  const heresYouPrompt = `Write a "Here's You" section for therapist ${therapistName}.
+
+Describe the THERAPIST'S approach and expertise in 75-90 words.
+
+Focus on:
+- Their clinical strengths in ${focus}
+- Why they're suited for ${preferredClientType}
+- Their therapeutic approach
+
+Write professionally, addressing the therapist as "You."`;
+
+  return await callAnthropicAPI(heresYouPrompt);
+}
+
+// Generate persona content with TEMPLATE approach (V2 improved version)
 async function generatePersonaContentV2(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   
@@ -55,8 +114,65 @@ Write professionally with empathy and psychological depth.`;
   return await callAnthropicAPI(personaPrompt);
 }
 
+function parsePersonaContent(rawContent) {
+  const result = {
+    title: '',
+    persona: '',
+    whatTheyNeed: '',
+    therapistFit: '',
+    hooks: []
+  };
+
+  try {
+    // Extract title
+    const titleMatch = rawContent.match(/\*\*PERSONA TITLE:\*\*(.*?)(?=\n|\*\*)/);
+    if (titleMatch) {
+      result.title = titleMatch[1].trim().replace(/^The\s+/, '');
+    }
+
+    // Extract persona (look for "WHO THEY ARE" section)
+    const personaMatch = rawContent.match(/\*\*WHO THEY ARE\*\*(.*?)(?=\*\*WHAT THEY NEED|\*\*THERAPIST FIT|\*\*KEY HOOKS|$)/s);
+    if (personaMatch) {
+      result.persona = personaMatch[1].trim().replace(/\n\s*\n/g, '\n\n');
+    }
+
+    // Extract What They Need
+    const whatTheyNeedMatch = rawContent.match(/\*\*WHAT THEY NEED\*\*(.*?)(?=\*\*THERAPIST FIT|\*\*KEY HOOKS|$)/s);
+    if (whatTheyNeedMatch) {
+      result.whatTheyNeed = whatTheyNeedMatch[1].trim();
+    }
+
+    // Extract Therapist Fit
+    const therapistFitMatch = rawContent.match(/\*\*THERAPIST FIT\*\*(.*?)(?=\*\*KEY HOOKS|$)/s);
+    if (therapistFitMatch) {
+      result.therapistFit = therapistFitMatch[1].trim();
+    }
+
+    // Extract hooks
+    const hookPattern = /\*\s*\*"([^"]+)"\*/g;
+    const keyHooksStart = rawContent.indexOf('**KEY HOOKS**');
+    
+    if (keyHooksStart > -1) {
+      let hooksSection = rawContent.substring(keyHooksStart);
+      const hookMatches = [...hooksSection.matchAll(hookPattern)];
+      
+      for (const match of hookMatches) {
+        const hookText = match[1].trim();
+        result.hooks.push({
+          headline: hookText,
+          subline: '' // V2 uses simple quote format
+        });
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ V2 Parsing error:', error.message);
+  }
+
+  return result;
+}
+
 export default async function handler(req, res) {
-  console.log('🚨 NEW TEMPLATE VERSION V2 - TIMESTAMP:', new Date().toISOString());
+  console.log('🚨 V2 TEMPLATE VERSION - TIMESTAMP:', new Date().toISOString());
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -88,17 +204,17 @@ export default async function handler(req, res) {
 
     console.log('🎯 Generating V2 for:', therapistName);
 
-    // Generate HERE'S YOU (reuse existing function)
+    // Generate HERE'S YOU
     const heresYouContent = await generateHeresYou(therapistData);
     
     // Generate persona content with NEW TEMPLATE approach
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
-    console.log('📄 V2 raw content generated, length:', rawPersonaContent.length);
+    console.log('📄 V2 content generated, length:', rawPersonaContent.length);
     
     const parsedPersona = parsePersonaContent(rawPersonaContent);
     console.log('✅ V2 content parsed successfully');
 
-    // Light grammar cleanup (should be minimal with template approach)
+    // Light grammar cleanup
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
         .replace(/They arrive with,/gi, 'They arrive with a heavy expression,')
@@ -115,7 +231,7 @@ export default async function handler(req, res) {
       hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
     };
 
-    console.log('✅ V2 Success - sending improved response');
+    console.log('✅ V2 Success - sending response');
 
     return res.status(200).json({
       success: true,
@@ -124,7 +240,7 @@ export default async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         therapistEmail: email,
         parentFocused: isForParents,
-        version: 'TEMPLATE_V2_ENHANCED'
+        version: 'TEMPLATE_V2'
       }
     });
 
@@ -138,91 +254,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
-// FRONTEND: Update your email collection component
-
-// Replace your single "Generate Persona" button with these two buttons:
-
-<div className="flex gap-4 justify-center mt-6">
-  <button 
-    onClick={handleGeneratePersona}
-    disabled={loading}
-    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-  >
-    {loading ? 'Generating...' : 'Generate Persona'}
-    <div className="text-xs text-blue-200 mt-1">Current System</div>
-  </button>
-  
-  <button 
-    onClick={handleGeneratePersonaV2}
-    disabled={loading}
-    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-  >
-    {loading ? 'Generating...' : 'Generate V2'}
-    <div className="text-xs text-green-200 mt-1">Enhanced Version</div>
-  </button>
-</div>
-
-// Add this new function to your frontend component:
-
-const handleGeneratePersonaV2 = async () => {
-  if (!email || !email.includes('@')) {
-    alert('Please enter a valid email address');
-    return;
-  }
-
-  setLoading(true);
-  setPersonaResult(null);
-  
-  try {
-    const response = await fetch('/api/generate-persona-v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        therapistName,
-        focus,
-        preferredClientType,
-        fulfillingTraits,
-        drainingTraits,
-        email
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.success) {
-      setPersonaResult({
-        ...data.persona,
-        version: 'V2 Enhanced' // Add version indicator
-      });
-      
-      // Optional: Track which version was used
-      console.log('Generated with V2 Enhanced version');
-      
-    } else {
-      throw new Error(data.error || 'Failed to generate V2 persona');
-    }
-  } catch (error) {
-    console.error('V2 Generation error:', error);
-    alert('Failed to generate V2 persona. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// OPTIONAL: Add version indicator to results display
-
-// In your results component, show which version was used:
-{personaResult && (
-  <div className="mb-4">
-    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-      personaResult.version === 'V2 Enhanced' 
-        ? 'bg-green-100 text-green-800' 
-        : 'bg-blue-100 text-blue-800'
-    }`}>
-      {personaResult.version || 'Current System'}
-    </span>
-  </div>
-)}
