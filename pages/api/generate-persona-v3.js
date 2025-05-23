@@ -1,6 +1,68 @@
-// V3 FIXED - Enhanced prompts to eliminate all V2 errors
+// V3 STRUCTURED GENERATION API - COMPLETE FIXED VERSION
+// Clean architecture with JSON-based AI interaction + Enhanced prompts
+// File: pages/api/generate-persona-v3.js
 
-// Generate structured persona content using JSON with IMPROVED PROMPTS
+async function callAnthropicAPI(prompt) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is required');
+  }
+
+  const requestBody = {
+    model: 'claude-3-7-sonnet-20250219',
+    max_tokens: 2000,
+    temperature: 0.1, // Lower for more consistent JSON
+    messages: [{ role: 'user', content: prompt }]
+  };
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Anthropic API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// Check if therapist works with minors
+function isMinorSpecialist(preferredClientType, focus) {
+  const minorKeywords = ['teen', 'teenager', 'adolescent', 'child', 'children', 'kid', 'youth', 'minor', 'student'];
+  const clientType = (preferredClientType || '').toLowerCase();
+  const focusArea = (focus || '').toLowerCase();
+  
+  return minorKeywords.some(keyword => 
+    clientType.includes(keyword) || focusArea.includes(keyword)
+  );
+}
+
+// Generate HERE'S YOU content with structured approach
+async function generateHeresYou(therapistData) {
+  const { therapistName, focus, preferredClientType } = therapistData;
+  
+  const prompt = `Generate a "Here's You" section for therapist ${therapistName}.
+
+Write 75-90 words describing the therapist's approach and expertise. Focus on:
+- Clinical strengths in ${focus}
+- Why they're suited for ${preferredClientType}
+- Their therapeutic approach
+
+Start with "You" and write professionally. Do not include any headers or formatting.`;
+
+  const response = await callAnthropicAPI(prompt);
+  return response.trim();
+}
+
+// Generate structured persona content using JSON with ENHANCED PROMPTS
 async function generateStructuredPersona(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   const isForParents = isMinorSpecialist(preferredClientType, focus);
@@ -109,4 +171,88 @@ function validateAndCleanPersona(persona, therapistData) {
   }
   
   return persona;
+}
+
+// Format persona for presentation
+function formatPersonaForPresentation(persona, heresYou) {
+  return {
+    title: persona.title,
+    heresYou: heresYou,
+    persona: `${persona.whoTheyAre.paragraph1}\n\n${persona.whoTheyAre.paragraph2}`,
+    whatTheyNeed: persona.whatTheyNeed,
+    therapistFit: persona.therapistFit,
+    hooks: persona.hooks.map(quote => ({
+      headline: quote,
+      subline: '' // V3 uses simple quote format
+    }))
+  };
+}
+
+// Main API handler
+export default async function handler(req, res) {
+  console.log('🚀 V3 FIXED STRUCTURED API - TIMESTAMP:', new Date().toISOString());
+  
+  // CORS headers - RESTORED
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    console.log('🎯 Processing V3 FIXED structured request...');
+    
+    const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
+
+    if (!therapistName || !focus || !preferredClientType) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: therapistName, focus, preferredClientType' 
+      });
+    }
+
+    const therapistData = { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits };
+    const isForParents = isMinorSpecialist(preferredClientType, focus);
+
+    console.log('📊 Generating FIXED structured content for:', therapistName);
+
+    // Generate components with clean architecture
+    const [heresYou, structuredPersona] = await Promise.all([
+      generateHeresYou(therapistData),
+      generateStructuredPersona(therapistData)
+    ]);
+
+    console.log('✅ V3 FIXED structured generation complete');
+
+    // Format for presentation
+    const finalResult = formatPersonaForPresentation(structuredPersona, heresYou);
+
+    console.log('🎉 V3 FIXED Success - clean structured output');
+
+    return res.status(200).json({
+      success: true,
+      persona: finalResult,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        therapistEmail: email,
+        parentFocused: isForParents,
+        version: 'V3_FIXED_STRUCTURED_JSON'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ V3 FIXED Error:', error);
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to generate V3 FIXED persona',
+      details: error.message
+    });
+  }
 }
