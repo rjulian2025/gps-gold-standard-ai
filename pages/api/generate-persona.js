@@ -61,55 +61,48 @@ Write professionally, addressing the therapist as "You."`;
   return await callAnthropicAPI(heresYouPrompt);
 }
 
-// SIMPLE WORKING VERSION - Generate persona content
+// NUCLEAR OPTION - Ultra-aggressive prompt to stop bad patterns
 async function generatePersonaContent(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   
   const isForParents = isMinorSpecialist(preferredClientType, focus);
   
-  const personaPrompt = `Create a client persona for ${therapistName}, specializing in ${focus} with ${preferredClientType}.
+  const personaPrompt = `You are writing a client description for therapist ${therapistName}.
 
-${isForParents ? 'Focus on PARENTS dealing with troubled teens.' : 'Focus on ADULTS seeking therapy.'}
+${isForParents ? 'The client is a PARENT dealing with troubled teens.' : 'The client is an ADULT seeking therapy.'}
 
-CRITICAL WRITING RULES:
-- Start the persona description with: "Sitting across from you," or "Behind their composed exterior," or "They arrive with"
-- ABSOLUTELY FORBIDDEN: Do not write "[Title] is a person who" - this is wrong
-- ABSOLUTELY FORBIDDEN: Do not write "who sitting" - this is grammatically incorrect
-- Use complete sentences with proper grammar
-- Use "they/them" pronouns only
-- Write 150-180 words for persona section
+FOLLOW THIS EXACT FORMAT:
 
-STRUCTURE:
-
-**PERSONA TITLE:** [Create a compelling title]
+**PERSONA TITLE:** [Write a compelling title]
 
 **PERSONA:** 
-Sitting across from you, [continue with natural description using they/them pronouns. Write 150-180 words about their experience and challenges.]
+Sitting across from you, they [write 150-180 words describing this person's experience and challenges using only "they/them/their" pronouns]
 
 **WHAT THEY NEED:** 
-[45-55 words about therapeutic support needed]
+These clients need [45-55 words about therapeutic support]
 
-**THERAPIST FIT:** 
-You offer [45-55 words about why you're the right therapist, addressing the therapist as "You"]
+**THERAPIST FIT:**
+You understand [45-55 words about why you're the right therapist]
 
 **MARKETING HOOKS:**
 
-**[Compelling headline]**
-[Supporting text]
+**[Write compelling headline]**
+[Write supporting text]
 
-**[Second headline]** 
-[Supporting text]
+**[Write second headline]** 
+[Write supporting text]
 
-**[Third headline]**
-[Supporting text]
+**[Write third headline]**
+[Write supporting text]
 
-EXAMPLE OF CORRECT OPENING:
-"Sitting across from you, they clutch a folder of documents..."
+CRITICAL GRAMMAR RULES:
+1. Start the persona with "Sitting across from you, they"
+2. Never write the persona title inside the persona description
+3. Use "You understand" or "You offer" for therapist fit
+4. Use complete sentences only
+5. Stop writing after the third marketing hook
 
-EXAMPLE OF WRONG OPENING (DO NOT USE):
-"Desperate Navigator is a person who sitting across from you..."
-
-Write naturally and professionally. STOP after the third marketing hook.`;
+Write professionally and naturally. Begin now.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -215,24 +208,50 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContent(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // COMPREHENSIVE grammar fixes
+    // NUCLEAR grammar fixes - catch everything
+    console.log('🔧 Applying nuclear grammar fixes...');
+    
     if (parsedPersona.persona) {
+      const originalPersona = parsedPersona.persona;
+      
       parsedPersona.persona = parsedPersona.persona
-        .replace(/\w+ is a person who sitting/gi, 'Sitting')
-        .replace(/\w+ is a person who/gi, 'They are someone who')
+        // Remove any "[Title] is a person who" patterns
+        .replace(/^.*is a person who sitting/gi, 'Sitting')
+        .replace(/^.*is a person who/gi, 'They are')
         .replace(/who sitting/gi, 'who is sitting')
+        .replace(/Silent Sufferer is a person who/gi, '')
         .replace(/Desperate Navigator is a person who/gi, '')
         .replace(/Functional Struggler is a person who/gi, '')
         .replace(/Exhausted Guardian is a person who/gi, '')
         .replace(/High-Achieving Burnout Survivor is a person who/gi, '')
-        .replace(/Family Peacemaker is a person who/gi, '');
+        .replace(/Family Peacemaker is a person who/gi, '')
+        // Clean up any remaining fragments
+        .replace(/^sitting across from you,/gi, 'Sitting across from you,')
+        .trim();
+      
+      console.log('🔧 Original start:', originalPersona.substring(0, 80));
+      console.log('🔧 Fixed start:', parsedPersona.persona.substring(0, 80));
+    }
+    
+    if (parsedPersona.whatTheyNeed) {
+      parsedPersona.whatTheyNeed = parsedPersona.whatTheyNeed
+        .replace(/Build a trusting therapeutic relationship through authentic connection. Provide specialized expertise that addresses their specific challenges. Offer a safe space for vulnerability and growth/gi, 
+          'Professional expertise combined with genuine understanding of their specific challenges and circumstances.');
     }
     
     if (parsedPersona.therapistFit) {
+      const originalFit = parsedPersona.therapistFit;
+      
       parsedPersona.therapistFit = parsedPersona.therapistFit
         .replace(/You needs/gi, 'You need')
         .replace(/You seeks/gi, 'You seek')
-        .replace(/You values/gi, 'You value');
+        .replace(/You values/gi, 'You value')
+        // Replace generic content
+        .replace(/You needs guidance through emotional challenges. You seeks authentic connection and understanding. You values trust and expertise in therapeutic relationships./gi,
+          'You offer both clinical competence and authentic connection, matching their needs with appropriate interventions.');
+      
+      console.log('🔧 Original therapist fit:', originalFit);
+      console.log('🔧 Fixed therapist fit:', parsedPersona.therapistFit);
     }
 
     const finalResult = {
