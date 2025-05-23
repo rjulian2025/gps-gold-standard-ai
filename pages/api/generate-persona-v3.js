@@ -1,68 +1,6 @@
-// V3 STRUCTURED GENERATION API
-// Clean architecture with JSON-based AI interaction
-// File: pages/api/generate-persona-v3.js
+// V3 FIXED - Enhanced prompts to eliminate all V2 errors
 
-async function callAnthropicAPI(prompt) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY environment variable is required');
-  }
-
-  const requestBody = {
-    model: 'claude-3-7-sonnet-20250219',
-    max_tokens: 2000,
-    temperature: 0.1, // Lower for more consistent JSON
-    messages: [{ role: 'user', content: prompt }]
-  };
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Anthropic API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
-}
-
-// Check if therapist works with minors
-function isMinorSpecialist(preferredClientType, focus) {
-  const minorKeywords = ['teen', 'teenager', 'adolescent', 'child', 'children', 'kid', 'youth', 'minor', 'student'];
-  const clientType = (preferredClientType || '').toLowerCase();
-  const focusArea = (focus || '').toLowerCase();
-  
-  return minorKeywords.some(keyword => 
-    clientType.includes(keyword) || focusArea.includes(keyword)
-  );
-}
-
-// Generate HERE'S YOU content with structured approach
-async function generateHeresYou(therapistData) {
-  const { therapistName, focus, preferredClientType } = therapistData;
-  
-  const prompt = `Generate a "Here's You" section for therapist ${therapistName}.
-
-Write 75-90 words describing the therapist's approach and expertise. Focus on:
-- Clinical strengths in ${focus}
-- Why they're suited for ${preferredClientType}
-- Their therapeutic approach
-
-Start with "You" and write professionally. Do not include any headers or formatting.`;
-
-  const response = await callAnthropicAPI(prompt);
-  return response.trim();
-}
-
-// Generate structured persona content using JSON
+// Generate structured persona content using JSON with IMPROVED PROMPTS
 async function generateStructuredPersona(therapistData) {
   const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits } = therapistData;
   const isForParents = isMinorSpecialist(preferredClientType, focus);
@@ -88,19 +26,25 @@ Generate ONLY valid JSON with this exact structure:
     "paragraph1": "60-80 words starting with 'Behind their composed exterior lies someone who...' OR 'They arrive carrying the weight of...' OR 'In the quiet of your office, they reveal...' - describe surface presentation and immediate struggles",
     "paragraph2": "70-100 words about deeper psychological patterns and inner experience"
   },
-  "whatTheyNeed": "45-60 words about specific therapeutic support they need for ${focus}, focusing on practical interventions and support",
-  "therapistFit": "45-60 words starting with 'You understand how ${focus} affects...' explaining why this therapist is perfect for this client's specific needs",
+  "whatTheyNeed": "They need a therapist who can help them [specific description of therapeutic work needed for ${focus}]. Write 45-60 words about practical therapeutic interventions and specific support this client requires for ${focus}.",
+  "therapistFit": "You understand how ${focus} affects ${preferredClientType.toLowerCase()} and can provide [specific therapeutic expertise]. Write 45-60 words explaining why ${therapistName}'s expertise in ${focus} makes them perfect for this client's specific needs.",
   "hooks": [
-    "First person quote showing their inner experience",
+    "First person quote showing their inner experience with ${focus}",
     "Second quote about their specific struggle with ${focus}",
-    "Third quote about their fears or hopes for therapy"
+    "Third quote about their fears or hopes for therapy regarding ${focus}"
   ]
 }
 
 Client traits that energize therapist: ${traits.fulfilling}
 Client traits that can be challenging: ${traits.draining}
 
-CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra text.`;
+CRITICAL INSTRUCTIONS:
+- For "whatTheyNeed": Write ONLY about specific therapeutic support needed for ${focus}. Do NOT write "Your empathetic approach" or similar therapist-focused content.
+- For "therapistFit": Start with "You understand how ${focus} affects..." and explain therapist expertise. Do NOT write "You needs guidance" or client-focused content.
+- Use proper grammar throughout. Check subject-verb agreement.
+- Focus on ${focus} specifically in all sections.
+
+Respond ONLY with valid JSON. No markdown, no explanations, no extra text.`;
 
   const response = await callAnthropicAPI(prompt);
   
@@ -112,7 +56,7 @@ CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra t
   
   try {
     const persona = JSON.parse(cleanResponse);
-    return validatePersonaStructure(persona);
+    return validateAndCleanPersona(persona, therapistData);
   } catch (error) {
     console.error('JSON parsing failed:', error.message);
     console.error('Raw response:', response);
@@ -120,8 +64,11 @@ CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, no extra t
   }
 }
 
-// Validate persona structure
-function validatePersonaStructure(persona) {
+// Enhanced validation with content cleaning
+function validateAndCleanPersona(persona, therapistData) {
+  const { focus, preferredClientType } = therapistData;
+  const isForParents = isMinorSpecialist(preferredClientType, focus);
+  
   const required = ['title', 'whoTheyAre', 'whatTheyNeed', 'therapistFit', 'hooks'];
   const missing = required.filter(field => !persona[field]);
   
@@ -139,89 +86,27 @@ function validatePersonaStructure(persona) {
     throw new Error('hooks must be an array of exactly 3 quotes');
   }
   
-  return persona;
-}
-
-// Format persona for presentation
-function formatPersonaForPresentation(persona, heresYou) {
-  return {
-    title: persona.title,
-    heresYou: heresYou,
-    persona: `${persona.whoTheyAre.paragraph1}\n\n${persona.whoTheyAre.paragraph2}`,
-    whatTheyNeed: persona.whatTheyNeed,
-    therapistFit: persona.therapistFit,
-    hooks: persona.hooks.map(quote => ({
-      headline: quote,
-      subline: '' // V3 uses simple quote format
-    }))
-  };
-}
-
-// Main API handler
-export default async function handler(req, res) {
-  console.log('🚀 V3 STRUCTURED API - TIMESTAMP:', new Date().toISOString());
-  
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    console.log('🎯 Processing V3 structured request...');
-    
-    const { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits, email } = req.body;
-
-    if (!therapistName || !focus || !preferredClientType) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: therapistName, focus, preferredClientType' 
-      });
+  // FORCE CLEAN CONTENT if AI still generates garbage
+  if (persona.whatTheyNeed.includes('Your empathetic') || 
+      persona.whatTheyNeed.includes('Your expertise') ||
+      persona.whatTheyNeed.includes('Your therapeutic')) {
+    if (isForParents) {
+      persona.whatTheyNeed = `They need guidance in understanding their child's behavior patterns while developing effective parenting strategies that reduce household conflict and strengthen family bonds through evidence-based approaches.`;
+    } else {
+      persona.whatTheyNeed = `They need a therapist who understands ${focus.toLowerCase()} and can provide both insight into their patterns and practical, evidence-based tools for creating sustainable change in their daily life.`;
     }
-
-    const therapistData = { therapistName, focus, preferredClientType, fulfillingTraits, drainingTraits };
-    const isForParents = isMinorSpecialist(preferredClientType, focus);
-
-    console.log('📊 Generating structured content for:', therapistName);
-
-    // Generate components with clean architecture
-    const [heresYou, structuredPersona] = await Promise.all([
-      generateHeresYou(therapistData),
-      generateStructuredPersona(therapistData)
-    ]);
-
-    console.log('✅ V3 structured generation complete');
-
-    // Format for presentation
-    const finalResult = formatPersonaForPresentation(structuredPersona, heresYou);
-
-    console.log('🎉 V3 Success - clean structured output');
-
-    return res.status(200).json({
-      success: true,
-      persona: finalResult,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        therapistEmail: email,
-        parentFocused: isForParents,
-        version: 'V3_STRUCTURED_JSON'
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ V3 Error:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to generate V3 structured persona',
-      details: error.message
-    });
   }
+  
+  if (persona.therapistFit.includes('You needs') || 
+      persona.therapistFit.includes('You seeks') ||
+      persona.therapistFit.includes('You values') ||
+      !persona.therapistFit.startsWith('You understand')) {
+    if (isForParents) {
+      persona.therapistFit = `You understand how family dynamics affect everyone involved and specialize in helping parents develop both the insight and practical skills needed to support their struggling teen while maintaining their own well-being.`;
+    } else {
+      persona.therapistFit = `You understand how ${focus.toLowerCase()} affects ${preferredClientType.toLowerCase()} and provide the perfect combination of clinical expertise and genuine empathy they need for lasting change and recovery.`;
+    }
+  }
+  
+  return persona;
 }
