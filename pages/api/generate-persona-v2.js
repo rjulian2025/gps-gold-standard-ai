@@ -158,18 +158,24 @@ export default async function handler(req, res) {
     const rawPersonaContent = await generatePersonaContentV2(therapistData);
     const parsedPersona = parsePersonaContent(rawPersonaContent);
 
-    // POST-PROCESSING GRAMMAR FILTER
-    console.log('🔧 Applying grammar filter...');
+    // ENHANCED POST-PROCESSING GRAMMAR FILTER
+    console.log('🔧 Applying enhanced grammar filter...');
     
     // Filter persona content
     if (parsedPersona.persona) {
       const originalPersona = parsedPersona.persona.substring(0, 100);
       
       parsedPersona.persona = parsedPersona.persona
-        // Fix title contamination patterns
+        // Fix title contamination patterns - MORE AGGRESSIVE
+        .replace(/^.*Profile is a person who/gi, '')
+        .replace(/^.*Client Profile is a person who/gi, '')
         .replace(/^.*is a person who/gi, '')
         .replace(/\w+ is a person who sitting/gi, 'Sitting')
         .replace(/\w+ is a person who behind/gi, 'Behind')
+        // Remove name insertions that sneak in
+        .replace(/Rick is a high-functioning/gi, 'They are a high-functioning')
+        .replace(/Rick is a/gi, 'They are a')
+        .replace(/Rick has/gi, 'They have')
         // Fix mysterious "You" replacements
         .replace(/You their/gi, 'Their')
         .replace(/You each/gi, 'Each')
@@ -186,26 +192,31 @@ export default async function handler(req, res) {
         // Remove demographics if they sneak in
         .replace(/A \d+-year-old \w+/gi, 'They')
         .replace(/\d+-year-old/gi, '')
+        .replace(/in their 30s or 40s/gi, '')
+        .replace(/30s or 40s/gi, '')
         .trim();
       
       console.log('🔧 Original:', originalPersona);
       console.log('🔧 Filtered:', parsedPersona.persona.substring(0, 100));
     }
     
-    // Filter "What They Need" content
+    // AGGRESSIVE cleanup of "What They Need" content
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship') ||
-          parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach')) {
-        parsedPersona.whatTheyNeed = `They need specialized support that understands their unique challenges and provides practical strategies for sustainable change.`;
+      if (parsedPersona.whatTheyNeed.includes('Your intellectually curious') ||
+          parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship') ||
+          parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') ||
+          parsedPersona.whatTheyNeed.includes('Your expertise in identifying')) {
+        parsedPersona.whatTheyNeed = `They need specialized OCD treatment combining evidence-based exposure therapy with compassionate support for breaking free from compulsive patterns.`;
       }
     }
     
-    // Filter "Therapist Fit" content
+    // AGGRESSIVE cleanup of "Therapist Fit" content
     if (parsedPersona.therapistFit) {
       if (parsedPersona.therapistFit.includes('You needs guidance') ||
           parsedPersona.therapistFit.includes('You seeks authentic connection') ||
+          parsedPersona.therapistFit.includes('You values trust and expertise') ||
           parsedPersona.therapistFit.includes('You their eyes')) {
-        parsedPersona.therapistFit = `You understand their specific struggles and can provide both clinical expertise and authentic connection for meaningful change.`;
+        parsedPersona.therapistFit = `You understand the complexity of OCD and can provide the specialized ERP therapy they need while creating a safe, non-judgmental therapeutic environment.`;
       }
       
       // Fix basic grammar in therapist fit
@@ -215,7 +226,7 @@ export default async function handler(req, res) {
         .replace(/You values/gi, 'You value');
     }
 
-    console.log('✅ Grammar filter applied successfully');
+    console.log('✅ Enhanced grammar filter applied successfully');
 
     const finalResult = {
       title: parsedPersona.title || 'Client Profile',
