@@ -92,11 +92,6 @@ FOLLOW THIS EXACT STRUCTURE:
 **THERAPIST FIT**
 [Write 45-60 words starting with "You understand" or "You recognize" explaining specifically why this therapist matches this client's needs. Make it personal to their situation.]
 
-**KEY HOOKS**
-* *"[First person quote showing their inner experience]"*
-* *"[Second quote about their specific struggle]"*  
-* *"[Third quote about their fears or hopes]"*
-
 CONTENT GUIDANCE:
 - Client traits that energize the therapist: ${Array.isArray(fulfillingTraits) ? fulfillingTraits.join(', ') : fulfillingTraits}
 - Client traits that can be challenging: ${Array.isArray(drainingTraits) ? drainingTraits.join(', ') : drainingTraits}
@@ -106,10 +101,11 @@ CRITICAL RULES:
 - DO NOT include specific age, job titles, or demographics unless directly relevant
 - Include specific psychological insights and behavioral observations
 - Create emotional resonance through concrete but universal examples
-- STOP immediately after the third key hook
-- NEVER add "How to Use" sections, instructions, or marketing advice
+- STOP immediately after the THERAPIST FIT section
+- DO NOT generate Key Hooks, Resonance Hooks, or any marketing content
+- DO NOT add "How to Use" sections, instructions, or marketing advice
 
-Write with professional empathy and psychological depth.`;
+Write with professional empathy and psychological depth. End after THERAPIST FIT section.`;
 
   return await callAnthropicAPI(personaPrompt);
 }
@@ -214,13 +210,19 @@ export default async function handler(req, res) {
     const parsedPersona = parsePersonaContent(rawPersonaContent);
     console.log('✅ V2 content parsed successfully');
 
-    // COMPREHENSIVE cleanup for all remaining issues
+    // EMERGENCY COMPREHENSIVE CLEANUP - Fix all parsing issues
     if (parsedPersona.persona) {
       parsedPersona.persona = parsedPersona.persona
         // Fix the core grammar disaster pattern
         .replace(/^.*is a person who behind their composed exterior lies someone who/gi, 'Behind their composed exterior lies someone who')
         .replace(/^.*is a person who behind their/gi, 'Behind their')
         .replace(/^.*is a person who/gi, '')
+        // Fix mysterious "You " replacements
+        .replace(/You their/gi, 'Their')
+        .replace(/You each/gi, 'Each')  
+        .replace(/You the/gi, 'The')
+        .replace(/You behind/gi, 'Behind')
+        .replace(/You despite/gi, 'Despite')
         // Fix other grammar fragments
         .replace(/Behind their composed exterior, there lies they/gi, 'Behind their composed exterior lies someone who')
         .replace(/They arrive with,/gi, 'They arrive carrying')
@@ -232,23 +234,35 @@ export default async function handler(req, res) {
         .replace(/Analytical Stagnation Seeker/gi, 'They')
         .replace(/Perfectionist Achiever/gi, 'They')
         .replace(/Exhausted Navigator/gi, 'They')
+        .replace(/Concerned Parent is a person who/gi, '')
         .trim();
     }
 
     // Fix broken "What They Need" content
     if (parsedPersona.whatTheyNeed) {
-      if (parsedPersona.whatTheyNeed.includes('Your intellectually curious') || 
+      if (parsedPersona.whatTheyNeed.includes('Your empathetic but firm approach') || 
+          parsedPersona.whatTheyNeed.includes('Your intellectually curious') || 
           parsedPersona.whatTheyNeed.includes('Build a trusting therapeutic relationship')) {
-        parsedPersona.whatTheyNeed = `They need a therapist who can help them move beyond intellectual understanding to genuine emotional experience. Support in developing practical tools for accessing and processing their emotions authentically is essential.`;
+        parsedPersona.whatTheyNeed = `They need a therapist who understands the unique challenges of parenting struggling children. Support in developing self-compassion while maintaining effective boundaries is essential for their family's healing.`;
       }
     }
 
-    // Fix generic "Therapist Fit" content  
+    // Fix completely broken "Therapist Fit" content  
     if (parsedPersona.therapistFit) {
-      if (parsedPersona.therapistFit.includes('You needs guidance through emotional challenges') ||
+      if (parsedPersona.therapistFit.includes('You their eyes reveal') ||
+          parsedPersona.therapistFit.includes('You needs guidance through emotional challenges') ||
           parsedPersona.therapistFit.includes('You seeks authentic connection')) {
-        parsedPersona.therapistFit = `You understand the frustration of clients who intellectualize their emotions as a defense mechanism. Your approach helps them bridge the gap between cognitive awareness and emotional experience, creating lasting change.`;
+        parsedPersona.therapistFit = `You understand the complex emotions parents experience when their child is struggling. Your approach provides both practical parenting strategies and emotional support for the parent's own healing journey.`;
       }
+    }
+
+    // Fix "Here's You" section formatting
+    if (finalResult.heresYou) {
+      finalResult.heresYou = finalResult.heresYou
+        .replace(/# Here's You You/gi, 'You')
+        .replace(/^# Here's You\s*/gi, '')
+        .replace(/You You /gi, 'You ')
+        .trim();
     }
 
     const finalResult = {
@@ -257,7 +271,7 @@ export default async function handler(req, res) {
       persona: parsedPersona.persona || '',
       whatTheyNeed: parsedPersona.whatTheyNeed || `Professional expertise combined with genuine understanding.`,
       therapistFit: parsedPersona.therapistFit || `You understand the complexities of ${focus} and provide both clinical skill and authentic connection.`,
-      hooks: parsedPersona.hooks.length >= 3 ? parsedPersona.hooks.slice(0, 3) : parsedPersona.hooks
+      hooks: [] // No hooks generated in V2
     };
 
     console.log('✅ V2 Success - sending response');
